@@ -1,25 +1,33 @@
 locals {
   waf_configs = {
-    "api.gefa-a.de"             = { mode = "Detection", rule_group_overrides = {} }
-    "api.gefa.de"               = { mode = "Detection", rule_group_overrides = {} }
-    "auth.gefa-a.de"            = { mode = "Detection", rule_group_overrides = {} }
-    "auth.gefa.de"              = { mode = "Detection", rule_group_overrides = {} }
-    "card.gefa-a.de"            = { mode = "Detection", rule_group_overrides = {} }
-    "card.gefa.de"              = { mode = "Detection", rule_group_overrides = {} }
-    "gefa-connect.de"           = { mode = "Detection", rule_group_overrides = {} }
-    "gefa-connect.gefa-a.de"    = { mode = "Detection", rule_group_overrides = {} }
-    "geo.gefa-a.de"             = { mode = "Detection", rule_group_overrides = {} }
-    "geo.gefa.de"               = { mode = "Detection", rule_group_overrides = {} }
-    "git.gefa-a.de"             = { mode = "Detection", rule_group_overrides = {} }
-    "git.gefa.de"               = { mode = "Detection", rule_group_overrides = {} }
-    "my.gefa-bank-a.de"         = { mode = "Detection", rule_group_overrides = {} }
-    "my.gefa-bank.de"           = { mode = "Detection", rule_group_overrides = {} }
-    "redmine.gefa-a.de"         = { mode = "Detection", rule_group_overrides = {} }
-    "redmine.gefa.de"           = { mode = "Detection", rule_group_overrides = {} }
-    "smebanking.gefa-bank-a.de" = { mode = "Detection", rule_group_overrides = {} }
-    "smebanking.gefa.de"        = { mode = "Detection", rule_group_overrides = {} }
-    "web.gefa-bank-a.de"        = { mode = "Detection", rule_group_overrides = {} }
-    "web.gefa-bank.de"          = { mode = "Detection", rule_group_overrides = {} }
+    "api.gefa-a.de"             = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "api.gefa.de"               = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "auth.gefa-a.de"            = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "auth.gefa.de"              = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "card.gefa-a.de"            = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "card.gefa.de"              = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "gefa-connect.de"           = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "gefa-connect.gefa-a.de"    = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "geo.gefa-a.de"             = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "geo.gefa.de"               = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "git.gefa-a.de"             = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "git.gefa.de"               = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    
+    "my.gefa-bank.de" = { 
+      mode          = "Detection"
+      drs_overrides = { "PROTOCOL-ENFORCEMENT" = ["920420"] }
+      bot_overrides = { "UnknownBots"          = ["300700"] } 
+    }
+    
+    "my.gefa-bank-a.de"         = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "myuser.gefa-a.de"          = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "myuser.gefa.de"            = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "redmine.gefa-a.de"         = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "redmine.gefa.de"           = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "smebanking.gefa-bank-a.de" = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "smebanking.gefa.de"        = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "web.gefa-bank-a.de"        = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
+    "web.gefa-bank.de"          = { mode = "Detection", drs_overrides = {}, bot_overrides = {} }
   }
 }
 
@@ -40,12 +48,13 @@ resource "azurerm_web_application_firewall_policy" "waf_policies" {
   }
 
   managed_rules {
+    # MOTEUR 1 : Règles OWASP Classiques (Default Rule Set)
     managed_rule_set {
       type    = "Microsoft_DefaultRuleSet"
       version = "2.1"
 
       dynamic "rule_group_override" {
-        for_each = each.value.rule_group_overrides
+        for_each = each.value.drs_overrides
         
         content {
           rule_group_name = rule_group_override.key
@@ -61,14 +70,26 @@ resource "azurerm_web_application_firewall_policy" "waf_policies" {
       }
     }
 
+    # MOTEUR 2 : Règles Anti-Bots (Bot Manager Rule Set)
     managed_rule_set {
       type    = "Microsoft_BotManagerRuleSet"
       version = "1.0"
+
+      dynamic "rule_group_override" {
+        for_each = each.value.bot_overrides
+        
+        content {
+          rule_group_name = rule_group_override.key
+
+          dynamic "rule" {
+            for_each = rule_group_override.value
+            content {
+              id      = rule.value
+              enabled = false
+            }
+          }
+        }
+      }
     }
   }
-}
-
-import {
-  to = azurerm_web_application_firewall_policy.waf_policies["gefa-connect.gefa-a.de"]
-  id = "/subscriptions/dcffba59-38ca-4dd5-9360-c05ab1fb7b61/resourceGroups/azr-rg-bit-gefa-sas-in-prd/providers/Microsoft.Network/applicationGatewayWebApplicationFirewallPolicies/gefa-connect.gefa-a.de"
 }
