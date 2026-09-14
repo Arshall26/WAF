@@ -1,4 +1,369 @@
-Error: A resource with the ID "/subscriptions/dcffba59-38ca-4dd5-9360-c05ab1fb7b61/resourceGroups/azr-rg-bit-gefa-sas-in-prd/providers/Microsoft.Network/applicationGatewayWebApplicationFirewallPolicies/gefa-connect.gefa-a.de" already exists - to be managed via Terraform this resource needs to be imported into the State. Please see the resource documentation for "azurerm_web_application_firewall_policy" for more information.
-with azurerm_web_application_firewall_policy.waf_policies["gefa-connect.gefa-a.de"]
-on main.tf line 26, in resource "azurerm_web_application_firewall_policy" "waf_policies":
-resource "azurerm_web_application_firewall_policy" "waf_policies" {
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+178.208.100.106
+/data-management/ksiop_ods.git/git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+178.208.100.106
+/data-management/cds_ods.git/git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+4.185.172.20
+/docker-base-images/ubuntu-tomcat.git/git-upload-pack
+9/14/2026, 2:24:29.220 PM
+920420
+Matched
+Request content type is not allowed by policy
+Microsoft_DefaultRuleSet 2.1
+PROTOCOL-ENFORCEMENT
+Pattern match ^([^;\s]+); Pattern match ^ Tx:allowed_request_content_type $ at TX:1.
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+178.208.100.106
+/data-management/cds.git/git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+geo.gefa-a.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+20.79.82.57
+/v2
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+178.208.100.106
+/data-management/if-ods.git/git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+smebanking.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+20.113.20.128
+/loginFormAction.do
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+178.208.100.106
+/data-management/cas-ods.git/info/refs?service=git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+4.185.172.20
+/docker-base-images/ubuntu-tomcat.git/info/refs?service=git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+178.208.100.106
+/data-management/cds_ods.git/info/refs?service=git-upload-pack
+9/14/2026, 2:24:29.220 PM
+920420
+Matched
+Request content type is not allowed by policy
+Microsoft_DefaultRuleSet 2.1
+PROTOCOL-ENFORCEMENT
+Pattern match ^([^;\s]+); Pattern match ^ Tx:allowed_request_content_type $ at TX:1.
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+178.208.100.106
+/data-management/ksiop_ods.git/git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+178.208.100.106
+/data-management/abacus360_interfaces.git/info/refs?service=git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+web.gefa-bank.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+20.113.20.128
+/finanzieren/?uptime_kuma_cachebuster=rka24x4rji
+9/14/2026, 2:24:29.220 PM
+920420
+Matched
+Request content type is not allowed by policy
+Microsoft_DefaultRuleSet 2.1
+PROTOCOL-ENFORCEMENT
+Pattern match ^([^;\s]+); Pattern match ^ Tx:allowed_request_content_type $ at TX:1.
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+4.185.172.20
+/docker-base-images/ruby.git/git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+geo.gefa-a.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+20.79.82.57
+/
+9/14/2026, 2:24:29.220 PM
+920420
+Matched
+Request content type is not allowed by policy
+Microsoft_DefaultRuleSet 2.1
+PROTOCOL-ENFORCEMENT
+Pattern match ^([^;\s]+); Pattern match ^ Tx:allowed_request_content_type $ at TX:1.
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+178.208.100.106
+/data-management/abacus360_interfaces.git/git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+4.185.172.20
+/docker-base-images/ruby.git/git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+4.185.172.20
+/docker-base-images/ubuntu-tomcat.git/info/refs?service=git-upload-pack
+9/14/2026, 2:24:29.220 PM
+920420
+Matched
+Request content type is not allowed by policy
+Microsoft_DefaultRuleSet 2.1
+PROTOCOL-ENFORCEMENT
+Pattern match ^([^;\s]+); Pattern match ^ Tx:allowed_request_content_type $ at TX:1.
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+178.208.100.106
+/data-management/if-ods.git/git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+web.gefa-bank.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+20.113.20.128
+/anlegen/?uptime_kuma_cachebuster=whgvynliwr
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+178.208.100.106
+/data-management/cds.git/info/refs?service=git-upload-pack
+9/14/2026, 2:24:29.220 PM
+920420
+Matched
+Request content type is not allowed by policy
+Microsoft_DefaultRuleSet 2.1
+PROTOCOL-ENFORCEMENT
+Pattern match ^([^;\s]+); Pattern match ^ Tx:allowed_request_content_type $ at TX:1.
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+178.208.100.106
+/data-management/powercenter_interfaces.git/git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+web.gefa-bank.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+85.208.96.212
+/robots.txt
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+api.gefa-a.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+20.79.82.57
+/services/Version/getVersion
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+smebanking.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+20.113.20.128
+/
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+geo.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+20.113.20.128
+/v2/
+9/14/2026, 2:24:29.220 PM
+920420
+Matched
+Request content type is not allowed by policy
+Microsoft_DefaultRuleSet 2.1
+PROTOCOL-ENFORCEMENT
+Pattern match ^([^;\s]+); Pattern match ^ Tx:allowed_request_content_type $ at TX:1.
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+4.185.172.20
+/docker-base-images/ubuntu-tomcat.git/git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+smebanking.gefa-bank-a.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+20.79.82.57
+/
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+4.185.172.20
+/docker-base-images/ubuntu-tomcat.git/info/refs?service=git-upload-pack
+9/14/2026, 2:24:29.220 PM
+920420
+Matched
+Request content type is not allowed by policy
+Microsoft_DefaultRuleSet 2.1
+PROTOCOL-ENFORCEMENT
+Pattern match ^([^;\s]+); Pattern match ^ Tx:allowed_request_content_type $ at TX:1.
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+4.185.172.20
+/docker-base-images/ubuntu-tomcat.git/git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+178.208.100.106
+/data-management/cas-ods.git/info/refs?service=git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+web.gefa-bank-a.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+20.79.82.57
+/anlegen/
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+4.185.172.20
+/docker-base-images/ubuntu-tomcat.git/info/refs?service=git-upload-pack
+9/14/2026, 2:24:29.220 PM
+920420
+Matched
+Request content type is not allowed by policy
+Microsoft_DefaultRuleSet 2.1
+PROTOCOL-ENFORCEMENT
+Pattern match ^([^;\s]+); Pattern match ^ Tx:allowed_request_content_type $ at TX:1.
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+4.185.172.20
+/docker-base-images/ruby.git/git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+4.185.172.20
+/internal-java/partner-service.git/info/refs?service=git-upload-pack
+9/14/2026, 2:24:29.220 PM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.0
+UnknownBots
+git.gefa.de
+APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
+178.208.100.106
+/data-management/if-ods.git/info/refs?service=git-upload-pack
