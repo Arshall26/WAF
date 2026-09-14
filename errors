@@ -1,0 +1,4 @@
+Error: A resource with the ID "/subscriptions/dcffba59-38ca-4dd5-9360-c05ab1fb7b61/resourceGroups/azr-rg-bit-gefa-sas-in-prd/providers/Microsoft.Network/applicationGatewayWebApplicationFirewallPolicies/gefa-connect.gefa-a.de" already exists - to be managed via Terraform this resource needs to be imported into the State. Please see the resource documentation for "azurerm_web_application_firewall_policy" for more information.
+with azurerm_web_application_firewall_policy.waf_policies["gefa-connect.gefa-a.de"]
+on main.tf line 26, in resource "azurerm_web_application_firewall_policy" "waf_policies":
+resource "azurerm_web_application_firewall_policy" "waf_policies" {
