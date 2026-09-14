@@ -1,1 +1,61 @@
-hello
+locals {
+    urls = [
+        "api.gefa-a.de",
+        "api.gefa.de",
+        "auth.gefa-a.de",
+        "auth.gefa.de",
+        "card.gefa-a.de",
+        "card.gefa.de",
+        "gefa-connect.de",
+        "gefa-connect.gefa-a.de",
+        "geo.gefa-a.de",
+        "geo.gefa.de",
+        "git.gefa-a.de",
+        "git.gefa.de",
+        "my.gefa-bank-a.de",
+        "my.gefa-bank.de",
+        "myuser.gefa-a.de",
+        "myuser.gefa.de",
+        "redmine.gefa-a.de",
+        "redmine.gefa.de",
+        "smebanking.gefa-bank-a.de",
+        "smebanking.gefa.de",
+        "web.gefa-bank-a.de",
+        "web.gefa-bank.de",
+
+    ]
+}
+
+resource "azurerm_web_application_firewall_policy" "waf_policies" {
+    for_each = toset(local.urls)
+
+    name = each.value 
+    resource_group_name = var.rg_name
+    location = var.location 
+
+    policy_settings {
+        enabled = true # Traduction de "state": "Enabled"
+        mode = "Detection"
+        request_body_check = true
+        max_request_body_size_in_kb = 1024
+        file_upload_limit_in_mb = 100
+        request_body_inspect_limit_in_kb = 1024
+    }
+
+    managed_rules {
+        managed_rule_set {
+            type = "Microsoft_DefaultRuleSet"
+            version = "2.1"
+        }
+
+        managed_rule_set {
+            type = "Microsoft_BotManagerRuleSet"
+            version = "1.0"
+        }
+
+        #managed_rule_set {
+        #    type = "Microsoft_HTTPDDoSRuleSet"
+        #    version = "1.0"
+        #}
+    }   
+}
