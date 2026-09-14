@@ -1,33 +1,150 @@
-9/14/2026, 4:10:29.648 PM
+300700
+'Other bots'
+505758
+942430
+Restricted SQL Character Anomaly Detection (args): # of special characters exceeded (12)
+72697
+949110
+Inbound Anomaly Score Exceeded (Total Score: 5)
+72355
 932100
-Matched
 Remote Command Execution: Unix Command Injection
-Microsoft_DefaultRuleSet 2.1
-RCE
-Pattern match (?:;|\{|\||\|\||&|&&|\n|\r|\$\(|\$\(\(|`|\${|<\(|>\(|\(\s*\))\s*(?:{|\s*\(\s*|\w+=(?:[^\s]*|\$.*|\$.*|<.*|>.*|\'.*\'|".*")\s+|!\s*|\$)*\s*(?:'|")*(?:[\?\*\[\]\(\)\-\|+\w'"\./\\]+/)?[\\'"]*(?:l[\\'"]*(?:w[\\'"]*p[\\'"]*-[\\'"]*(?:d[\\'"]*(?:o[\\'"]*w[\\'"]*n[\\'"]*l[\\'"]*o[\\'"]*a[\\'"]*d|u[\\'"]*m[\\'"]*p)|r[\\'"]*e[\\'"]*q[\\'"]*u[\\'"]*e[\\'"]*s[\\'"]*t|m[\\'"]*i[\\'"]*r[\\'"]*r[\\'"]*o[\\'"]*r)|s(?:[\\'"]*(?:b[\\'"]*_[\\'"]*r[\\'"]*e[\\'"]*l[\\'"]*e[\\'"]*a[\\'"]*s[\\'"]*e|c[\\'"]*p[\\'"]*u|m[\\'"]*o[\\'"]*d|p[\\'"]*c[\\'"]*i|u[\\'"]*s[\\'"]*b|-[\\'"]*F|h[\\'"]*w|o[\\'"]*f))?|z[\\'"]*(?:(?:[ef][\\'"]*)?g[\\'"]*r[\\'"]*e[\\'"]*p|c[\\'"]*(?:a[\\'"]*t|m[\\'"]*p)|m[\\'"]*(?:o[\\'"]*r[\\'"]*e|a)|d[\\'"]*i[\\'"]*f[\\'"]*f|l[\\'"]*e[\\'"]*s[\\'"]*s)|e[\\'"]*s[\\'"]*s[\\'"]*(?:(?:f[\\'"]*i[\\'"]*l|p[\\'"]*i[\\'"]*p)[\\'"]*e|e[\\'"]*c[\\'"]*h[\\'"]*o|(?:\s|<|>).*)|a[\\'"]*s[\\'"]*t[\\'"]*(?:l[\\'"]*o[\\'"]*g(?:[\\'"]*i[\\'"]*n)?|c[\\'"]*o[\\'"]*m[\\'"]*m|(?:\s|<|>).*)|o[\\'"]*(?:c[\\'"]*a[\\'"]*(?:t[\\'"]*e|l)[\\'"]*(?:\s|<|>).*|g[\\'"]*n[\\'"]*a[\\'"]*m[\\'"]*e)|d[\\'"]*(?:c[\\'"]*o[\\'"]*n[\\'"]*f[\\'"]*i[\\'"]*g|d[\\'"]*(?:\s|<|>).*)|f[\\'"]*t[\\'"]*p(?:[\\'"]*g[\\'"]*e[\\'"]*t)?|(?:[np]|y[\\'"]*n[\\'"]*x)[\\'"]*(?:\s|<|>).*)|b[\\'"]*(?:z[\\'"]*(?:(?:[ef][\\'"]*)?g[\\'"]*r[\\'"]*e[\\'"]*p|d[\\'"]*i[\\'"]*f[\\'"]*f|l[\\'"]*e[\\'"]*s[\\'"]*s|m[\\'"]*o[\\'"]*r[\\'"]*e|c[\\'"]*a[\\'"]*t|i[\\'"]*p[\\'"]*2)|s[\\'"]*d[\\'"]*(?:c[\\'"]*a[\\'"]*t|i[\\'"]*f[\\'"]*f|t[\\'"]*a[\\'"]*r)|a[\\'"]*(?:t[\\'"]*c[\\'"]*h[\\'"]*(?:\s|<|>).*|s[\\'"]*h)|r[\\'"]*e[\\'"]*a[\\'"]*k[\\'"]*s[\\'"]*w|u[\\'"]*i[\\'"]*l[\\'"]*t[\\'"]*i[\\'"]*n)|c[\\'"]*(?:o[\\'"]*(?:m[\\'"]*(?:p[\\'"]*r[\\'"]*e[\\'"]*s[\\'"]*s|m[\\'"]*a[\\'"]*n[\\'"]*d)[\\'"]*(?:\s|<|>).*|p[\\'"]*r[\\'"]*o[\\'"]*c)|h[\\'"]*(?:d[\\'"]*i[\\'"]*r[\\'"]*(?:\s|<|>).*|f[\\'"]*l[\\'"]*a[\\'"]*g[\\'"]*s|a[\\'"]*t[\\'"]*t[\\'"]*r|m[\\'"]*o[\\'"]*d)|r[\\'"]*o[\\'"]*n[\\'"]*t[\\'"]*a[\\'"]*b|(?:[cp]|a[\\'"]*t)[\\'"]*(?:\s|<|>).*|u[\\'"]*r[\\'"]*l|s[\\'"]*h)|f[\\'"]*(?:i(?:[\\'"]*(?:l[\\'"]*e[\\'"]*(?:t[\\'"]*e[\\'"]*s[\\'"]*t|(?:\s|<|>).*)|n[\\'"]*d[\\'"]*(?:\s|<|>).*))?|t[\\'"]*p[\\'"]*(?:s[\\'"]*t[\\'"]*a[\\'"]*t[\\'"]*s|w[\\'"]*h[\\'"]*o|(?:\s|<|>).*)|u[\\'"]*n[\\'"]*c[\\'"]*t[\\'"]*i[\\'"]*o[\\'"]*n|(?:e[\\'"]*t[\\'"]*c[\\'"]*h|c)[\\'"]*(?:\s|<|>).*|o[\\'"]*r[\\'"]*e[\\'"]*a[\\'"]*c[\\'"]*h|g[\\'"]*r[\\'"]*e[\\'"]*p)|e[\\'"]*(?:n[\\'"]*(?:v(?:[\\'"]*-[\\'"]*u[\\'"]*p[\\'"]*d[\\'"]*a[\\'"]*t[\\'"]*e)?|d[\\'"]*(?:i[\\'"]*f|s[\\'"]*w))|x[\\'"]*(?:p[\\'"]*(?:a[\\'"]*n[\\'"]*d|o[\\'"]*r[\\'"]*t|r)|e[\\'"]*c[\\'"]*(?:\s|<|>).*)|c[\\'"]*h[\\'"]*o[\\'"]*(?:\s|<|>).*|g[\\'"]*r[\\'"]*e[\\'"]*p|s[\\'"]*a[\\'"]*c|v[\\'"]*a[\\'"]*l)|h[\\'"]*(?:t[\\'"]*(?:d[\\'"]*i[\\'"]*g[\\'"]*e[\\'"]*s[\\'"]*t|p[\\'"]*a[\\'"]*s[\\'"]*s[\\'"]*w[\\'"]*d)|o[\\'"]*s[\\'"]*t[\\'"]*(?:n[\\'"]*a[\\'"]*m[\\'"]*e|i[\\'"]*d)|(?:e[\\'"]*a[\\'"]*d|u[\\'"]*p)[\\'"]*(?:\s|<|>).*|i[\\'"]*s[\\'"]*t[\\'"]*o[\\'"]*r[\\'"]*y)|i[\\'"]*(?:p[\\'"]*(?:(?:6[\\'"]*)?t[\\'"]*a[\\'"]*b[\\'"]*l[\\'"]*e[\\'"]*s|c[\\'"]*o[\\'"]*n[\\'"]*f[\\'"]*i[\\'"]*g)|r[\\'"]*b(?:[\\'"]*(?:1(?:[\\'"]*[89])?|2[\\'"]*[012]))?|f[\\'"]*c[\\'"]*o[\\'"]*n[\\'"]*f[\\'"]*i[\\'"]*g|d[\\'"]*(?:\s|<|>).*)|g[\\'"]*(?:(?:e[\\'"]*t[\\'"]*f[\\'"]*a[\\'"]*c[\\'"]*l|r[\\'"]*e[\\'"]*p|c[\\'"]*c|i[\\'"]*t)[\\'"]*(?:\s|<|>).*|z[\\'"]*(?:c[\\'"]*a[\\'"]*t|i[\\'"]*p)|u[\\'"]*n[\\'"]*z[\\'"]*i[\\'"]*p|d[\\'"]*b)|a[\\'"]*(?:(?:l[\\'"]*i[\\'"]*a[\\'"]*s|w[\\'"]*k)[\\'"]*(?:\s|<|>).*|d[\\'"]*d[\\'"]*u[\\'"]*s[\\'"]*e[\\'"]*r|p[\\'"]*t[\\'"]*-[\\'"]*g[\\'"]*e[\\'"]*t|r[\\'"]*(?:c[\\'"]*h[\\'"]*(?:\s|<|>).*|p))|d[\\'"]*(?:h[\\'"]*c[\\'"]*l[\\'"]*i[\\'"]*e[\\'"]*n[\\'"]*t|(?:i[\\'"]*f[\\'"]*f|u)[\\'"]*(?:\s|<|>).*|(?:m[\\'"]*e[\\'"]*s|p[\\'"]*k)[\\'"]*g|o[\\'"]*(?:a[\\'"]*s|n[\\'"]*e)|a[\\'"]*s[\\'"]*h)|m[\\'"]*(?:(?:k[\\'"]*d[\\'"]*i[\\'"]*r|o[\\'"]*r[\\'"]*e)[\\'"]*(?:\s|<|>).*|a[\\'"]*i[\\'"]*l[\\'"]*(?:x[\\'"]*(?:\s|<|>).*|q)|l[\\'"]*o[\\'"]*c[\\'"]*a[\\'"]*t[\\'"]*e)|j[\\'"]*(?:(?:a[\\'"]*v[\\'"]*a|o[\\'"]*b[\\'"]*s)[\\'"]*(?:\s|<|>).*|e[\\'"]*x[\\'"]*e[\\'"]*c)|k[\\'"]*i[\\'"]*l[\\'"]*l[\\'"]*(?:a[\\'"]*l[\\'"]*l|(?:\s|<|>).*)|(?:G[\\'"]*E[\\'"]*T[\\'"]*(?:\s|<|>)|\.\s).*|7[\\'"]*z(?:[\\'"]*[ar])?)\b at ARGS.
-git.gefa.de
-APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
-195.227.136.5
-/api/graphql
-9/14/2026, 4:10:29.648 PM
-942430
-Matched
-Restricted SQL Character Anomaly Detection (args): # of special characters exceeded (12)
-Microsoft_DefaultRuleSet 2.1
-SQLI
-Pattern match ((?:[~!@#\$%\^&\*\(\)\-\+=\{\}\[\]\|:;"'´’‘`<>][^~!@#\$%\^&\*\(\)\-\+=\{\}\[\]\|:;"'´’‘`<>]*?){12}) at ARGS.
-git.gefa.de
-APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
-195.227.136.5
-/api/graphql
-9/14/2026, 4:10:29.648 PM
-942430
-Matched
-Restricted SQL Character Anomaly Detection (args): # of special characters exceeded (12)
-Microsoft_DefaultRuleSet 2.1
-SQLI
-Pattern match ((?:[~!@#\$%\^&\*\(\)\-\+=\{\}\[\]\|:;"'´’‘`<>][^~!@#\$%\^&\*\(\)\-\+=\{\}\[\]\|:;"'´’‘`<>]*?){12}) at ARGS.
-git.gefa.de
-APPGW-SAS-INBOUND-GEFA-APPGW01-GERMANYWESTCENTRAL
-195.227.136.5
-/api/graphql
+66888
+920420
+Request content type is not allowed by policy
+54182
+949110
+Inbound Anomaly Score Exceeded (Total Score: 13)
+53031
+932160
+Remote Command Execution: Unix Shell Code Found
+52554
+300200
+'Tools and frameworks for web crawling and attacks'
+17233
+300600
+'Unknown bots detected by threat intelligence'
+15628
+930130
+Restricted File Access Attempt
+12287
+300300
+'General purpose HTTP clients and SDKs'
+11563
+920300
+Request Missing an Accept Header
+10242
+949110
+Inbound Anomaly Score Exceeded (Total Score: 8)
+9502
+942200
+Detects MySQL comment-/space-obfuscated injections and backtick termination
+8608
+942260
+Detects basic SQL authentication bypass attempts 2/3
+8548
+942340
+Detects basic SQL authentication bypass attempts 3/3
+8110
+949110
+Inbound Anomaly Score Exceeded (Total Score: 23)
+6801
+942370
+Detects classic SQL injection probings 2/3
+6062
+920440
+URL file extension is restricted by policy
+4478
+949110
+Inbound Anomaly Score Exceeded (Total Score: 10)
+4226
+932115
+Remote Command Execution: Windows Command Injection
+4002
+942330
+Detects classic SQL injection probings 1/3
+2714
+200003
+Multipart request body failed strict validation
+2307
+932110
+Remote Command Execution: Windows Command Injection
+2001
+200002
+Failed to parse request body.
+2000
+942440
+SQL Comment Sequence Detected
+1730
+99031002
+SQL Comment Sequence Detected.
+1670
+949110
+Inbound Anomaly Score Exceeded (Total Score: 31)
+1294
+942110
+SQL Injection Attack: Common Injection Testing Detected
+1167
+200100
+'Search engine crawlers'
+1144
+931130
+Possible Remote File Inclusion (RFI) Attack: Off-Domain Reference/Link
+1086
+930100
+Path Traversal Attack (/../)
+1060
+930110
+Path Traversal Attack (/../)
+1051
+930120
+OS File Access Attempt
+985
+942120
+SQL Injection Attack: SQL Operator Detected
+911
+942100
+SQL Injection Attack Detected via libinjection
+845
+100100
+'Malicious bots detected by threat intelligence'
+840
+99031004
+Detects basic SQL authentication bypass attempts 2/3
+799
+942130
+SQL Injection Attack: SQL Tautology Detected
+782
+920271
+Invalid character in request (non printable characters)
+704
+942300
+Detects MySQL comments, conditions and ch(a)r injections
+702
+920270
+Invalid character in request (null character)
+699
+920320
+Missing User Agent Header
+647
+300100
+'Unspecified identity'
+647
+942410
+SQL Injection Attack
+564
+942150
+SQL Injection Attack
+563
+99031003
+SQL Injection Attack
+559
+99031001
+SQL Injection Attack: Common Injection Testing Detected
+558
+949110
+Inbound Anomaly Score Exceeded (Total Score: 20)
+551
+943120
+Possible Session Fixation Attack: SessionID Parameter Name with No Referer
+502
