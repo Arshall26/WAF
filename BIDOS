@@ -67,3 +67,8 @@ resource "azurerm_web_application_firewall_policy" "waf_policies" {
     }
   }
 }
+
+import {
+  to = azurerm_web_application_firewall_policy.waf_policies["gefa-connect.gefa-a.de"]
+  id = "/subscriptions/dcffba59-38ca-4dd5-9360-c05ab1fb7b61/resourceGroups/azr-rg-bit-gefa-sas-in-prd/providers/Microsoft.Network/applicationGatewayWebApplicationFirewallPolicies/gefa-connect.gefa-a.de"
+}
