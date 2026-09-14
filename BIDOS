@@ -1,61 +1,69 @@
 locals {
-    urls = [
-        "api.gefa-a.de",
-        "api.gefa.de",
-        "auth.gefa-a.de",
-        "auth.gefa.de",
-        "card.gefa-a.de",
-        "card.gefa.de",
-        "gefa-connect.de",
-        "gefa-connect.gefa-a.de",
-        "geo.gefa-a.de",
-        "geo.gefa.de",
-        "git.gefa-a.de",
-        "git.gefa.de",
-        "my.gefa-bank-a.de",
-        "my.gefa-bank.de",
-        "myuser.gefa-a.de",
-        "myuser.gefa.de",
-        "redmine.gefa-a.de",
-        "redmine.gefa.de",
-        "smebanking.gefa-bank-a.de",
-        "smebanking.gefa.de",
-        "web.gefa-bank-a.de",
-        "web.gefa-bank.de",
-
-    ]
+  waf_configs = {
+    "api.gefa-a.de"             = { mode = "Detection", rule_group_overrides = {} }
+    "api.gefa.de"               = { mode = "Detection", rule_group_overrides = {} }
+    "auth.gefa-a.de"            = { mode = "Detection", rule_group_overrides = {} }
+    "auth.gefa.de"              = { mode = "Detection", rule_group_overrides = {} }
+    "card.gefa-a.de"            = { mode = "Detection", rule_group_overrides = {} }
+    "card.gefa.de"              = { mode = "Detection", rule_group_overrides = {} }
+    "gefa-connect.de"           = { mode = "Detection", rule_group_overrides = {} }
+    "gefa-connect.gefa-a.de"    = { mode = "Detection", rule_group_overrides = {} }
+    "geo.gefa-a.de"             = { mode = "Detection", rule_group_overrides = {} }
+    "geo.gefa.de"               = { mode = "Detection", rule_group_overrides = {} }
+    "git.gefa-a.de"             = { mode = "Detection", rule_group_overrides = {} }
+    "git.gefa.de"               = { mode = "Detection", rule_group_overrides = {} }
+    "my.gefa-bank-a.de"         = { mode = "Detection", rule_group_overrides = {} }
+    "my.gefa-bank.de"           = { mode = "Detection", rule_group_overrides = {} }
+    "redmine.gefa-a.de"         = { mode = "Detection", rule_group_overrides = {} }
+    "redmine.gefa.de"           = { mode = "Detection", rule_group_overrides = {} }
+    "smebanking.gefa-bank-a.de" = { mode = "Detection", rule_group_overrides = {} }
+    "smebanking.gefa.de"        = { mode = "Detection", rule_group_overrides = {} }
+    "web.gefa-bank-a.de"        = { mode = "Detection", rule_group_overrides = {} }
+    "web.gefa-bank.de"          = { mode = "Detection", rule_group_overrides = {} }
+  }
 }
 
 resource "azurerm_web_application_firewall_policy" "waf_policies" {
-    for_each = toset(local.urls)
+  for_each            = local.waf_configs
 
-    name = each.value 
-    resource_group_name = var.rg_name
-    location = var.location 
+  name                = each.key
+  resource_group_name = var.rg_name
+  location            = var.location
 
-    policy_settings {
-        enabled = true # Traduction de "state": "Enabled"
-        mode = "Detection"
-        request_body_check = true
-        max_request_body_size_in_kb = 1024
-        file_upload_limit_in_mb = 100
-        request_body_inspect_limit_in_kb = 1024
+  policy_settings {
+    enabled                          = true
+    mode                             = each.value.mode
+    request_body_check               = true
+    max_request_body_size_in_kb      = 1024
+    file_upload_limit_in_mb          = 100
+    request_body_inspect_limit_in_kb = 1024
+  }
+
+  managed_rules {
+    managed_rule_set {
+      type    = "Microsoft_DefaultRuleSet"
+      version = "2.1"
+
+      dynamic "rule_group_override" {
+        for_each = each.value.rule_group_overrides
+        
+        content {
+          rule_group_name = rule_group_override.key
+
+          dynamic "rule" {
+            for_each = rule_group_override.value
+            content {
+              id      = rule.value
+              enabled = false
+            }
+          }
+        }
+      }
     }
 
-    managed_rules {
-        managed_rule_set {
-            type = "Microsoft_DefaultRuleSet"
-            version = "2.1"
-        }
-
-        managed_rule_set {
-            type = "Microsoft_BotManagerRuleSet"
-            version = "1.0"
-        }
-
-        #managed_rule_set {
-        #    type = "Microsoft_HTTPDDoSRuleSet"
-        #    version = "1.0"
-        #}
-    }   
+    managed_rule_set {
+      type    = "Microsoft_BotManagerRuleSet"
+      version = "1.0"
+    }
+  }
 }
