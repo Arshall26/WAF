@@ -1,181 +1,84 @@
-Besoin FinOps OpenCost AKS
+# =============================================================================
+# Script      : Export-OpenCostFinOps.ps1
+# Description : Parse un export JSON OpenCost, extrait les métriques FinOps, 
+#               arrondit les coûts, trie par coût total et génère un CSV 
+#               compatible Excel FR (séparateur point-virgule, virgules pour décimales).
+# =============================================================================
 
-Nous utilisons OpenCost pour analyser les coûts des clusters AKS.
+$jsonFilePath = "compute.json"
+$csvFilePath  = "OpenCost_Export.csv"
 
-L'API testée est :
-
-Plain Text
-1
-https://api-poc-hub.opencost.eu.azure.local/allocation/compute?window=30d&aggregate=label:app,cluster&includeIdle=false
-Show more lines
-
-Le JSON de retour a déjà été extrait et sauvegardé localement dans :
-
-Plain Text
-1
-compute.json
-Show more lines
-
-L'objectif n'est pas de faire l'appel API pour l'instant.
-
-Objectif du script
-
-Créer un script PowerShell qui :
-
-Lit compute.json.
-Parse le JSON OpenCost.
-Parcourt tous les objets présents dans data.
-Extrait uniquement les informations FinOps utiles.
-Génère un export propre pour Excel.
-Structure observée
-
-Chaque entrée ressemble à :
-
-JSON
-1
-{
-2
-"name": "__unallocated__/AEnPocAks-TechArch",
-3
-"properties": {
-4
-"cluster": "AEnPocAks-TechArch"
-5
-},
-6
-"cpuCost": 62.52336,
-7
-"ramCost": 29.15255,
-8
-"networkCost": 0,
-9
-"loadBalancerCost": 21.24,
-10
-"pvCost": 3.86634,
-11
-"sharedCost": 0,
-12
-"totalCost": 116.78225
-13
+# 1. Vérification de l'existence du fichier JSON
+if (-not (Test-Path -Path $jsonFilePath)) {
+    Write-Error "Le fichier $jsonFilePath est introuvable dans le répertoire courant."
+    exit
 }
-Show more lines
-Colonnes attendues dans le résultat
 
-Conserver uniquement :
+Write-Host "Lecture du fichier $jsonFilePath..." -ForegroundColor Cyan
 
-Plain Text
-1
-Name
-2
-Cluster
-3
-CpuCost
-4
-RamCost
-5
-PvCost
-6
-NetworkCost
-7
-LoadBalancerCost
-8
-SharedCost
-9
-TotalCost
-Show more lines
+# 2. Lecture et parsing du JSON
+$json = Get-Content -Path $jsonFilePath -Raw | ConvertFrom-Json
+$data = $json.data
 
-où :
+# Gestion de la structure OpenCost :
+# L'API renvoie parfois `data` comme un tableau de dictionnaires (par fenêtre de temps).
+# On aplatit la structure pour récupérer directement la liste des objets.
+$items = @()
+if ($data -is [array] -and $data.Count -eq 1 -and $data[0].GetType().Name -eq "PSCustomObject") {
+    $items = $data[0].psobject.properties.Value
+} elseif ($data.GetType().Name -eq "PSCustomObject") {
+    $items = $data.psobject.properties.Value
+} else {
+    $items = $data
+}
 
-Plain Text
-1
-Name = item.name
-2
-Cluster = item.properties.cluster
-3
-CpuCost = item.cpuCost
-4
-RamCost = item.ramCost
-5
-PvCost = item.pvCost
-6
-NetworkCost = item.networkCost
-7
-LoadBalancerCost = item.loadBalancerCost
-8
-SharedCost = item.sharedCost
-9
-TotalCost = item.totalCost
-Show more lines
-Format de sortie
+# 3. Extraction, conversion et arrondi des métriques
+$processedItems = foreach ($item in $items) {
+    # On vérifie que l'item n'est pas nul et a un nom (pour éviter les objets vides ou métadonnées)
+    if (-not [string]::IsNullOrWhiteSpace($item.name)) {
+        [PSCustomObject]@{
+            Name             = $item.name
+            Cluster          = $item.properties.cluster
+            # On stocke d'abord en numérique pour pouvoir effectuer le tri
+            NumCpuCost       = [Math]::Round([double]$item.cpuCost, 2)
+            NumRamCost       = [Math]::Round([double]$item.ramCost, 2)
+            NumPvCost        = [Math]::Round([double]$item.pvCost, 2)
+            NumNetworkCost   = [Math]::Round([double]$item.networkCost, 2)
+            NumLbCost        = [Math]::Round([double]$item.loadBalancerCost, 2)
+            NumSharedCost    = [Math]::Round([double]$item.sharedCost, 2)
+            NumTotalCost     = [Math]::Round([double]$item.totalCost, 2)
+        }
+    }
+}
 
-CSV compatible Excel FR :
+# 4. Tri par TotalCost (les plus gros consommateurs en premier)
+$sortedItems = $processedItems | Sort-Object NumTotalCost -Descending
 
-séparateur ;
-UTF-8
-une ligne par allocation OpenCost
+# 5. Formatage des données pour Excel FR (transformation du '.' en ',')
+# Utilisation de la culture française pour un cast de string parfait (ex: 62.52 -> 62,52)
+$culture = [System.Globalization.CultureInfo]::GetCultureInfo("fr-FR")
 
-Exemple :
+$finalExport = foreach ($row in $sortedItems) {
+    [PSCustomObject]@{
+        Name             = $row.Name
+        Cluster          = $row.Cluster
+        CpuCost          = $row.NumCpuCost.ToString($culture)
+        RamCost          = $row.NumRamCost.ToString($culture)
+        PvCost           = $row.NumPvCost.ToString($culture)
+        NetworkCost      = $row.NumNetworkCost.ToString($culture)
+        LoadBalancerCost = $row.NumLbCost.ToString($culture)
+        SharedCost       = $row.NumSharedCost.ToString($culture)
+        TotalCost        = $row.NumTotalCost.ToString($culture)
+    }
+}
 
-Plain Text
-1
-Name;Cluster;CpuCost;RamCost;PvCost;NetworkCost;LoadBalancerCost;SharedCost;TotalCost
-2
-app1;cluster1;62,52;29,15;3,87;0;21,24;0;116,78
-Show more lines
-Traitements attendus
-Arrondis
+# 6. Exportation vers le fichier CSV
+# UTF8 et délimiteur point-virgule (;) indispensable pour Excel FR
+$finalExport | Export-Csv -Path $csvFilePath -Delimiter ';' -Encoding UTF8 -NoTypeInformation
 
-Tous les coûts doivent être arrondis à :
+# 7. Aperçu en console
+Write-Host "`nAperçu des plus gros consommateurs (Top 10) :" -ForegroundColor Yellow
+$finalExport | Select-Object Name, Cluster, CpuCost, RamCost, PvCost, TotalCost | Select-Object -First 10 | Format-Table -AutoSize
 
-Plain Text
-1
-2 décimales
-Show more lines
-
-Exemple :
-
-Plain Text
-1
-62.52336 -> 62.52
-Show more lines
-Tri
-
-Le résultat final doit être trié :
-
-Plain Text
-1
-TotalCost DESC
-Show more lines
-
-afin d'avoir les plus gros consommateurs en tête.
-
-Sortie attendue
-
-Le script génère :
-
-Plain Text
-1
-OpenCost_Export.csv
-Show more lines
-
-et affiche éventuellement un aperçu console :
-
-Plain Text
-1
-Cluster CpuCost RamCost PvCost TotalCost
-2
-------- ------- ------- ------ ---------
-3
-AEnPocAks-TechArch 62.52 29.15 3.87 116.78
-4
-...
-Show more lines
-Contexte FinOps
-
-Le but final est :
-
-identifier les consommateurs AKS ;
-créer du showback / chargeback ;
-charger facilement le résultat dans Excel ou Power BI ;
-comparer les coûts CPU / RAM / Storage / LoadBalancer par application et par cluster ;
-disposer d'un export exploitable sans manipulations manuelles dans Power Query.
+Write-Host "Export terminé avec succès !" -ForegroundColor Green
+Write-Host "Fichier généré : $(Resolve-Path $csvFilePath)" -ForegroundColor Green
