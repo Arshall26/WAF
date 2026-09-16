@@ -1,83 +1,21 @@
-hi, i'm always getting 404 now. everytime i'm using https, with http it seems to work, but http is mostly redirecting to https.
-even for urls that were already added and working before, i'm getting 404:
- 
-http:
- 
-jenkins@jenkins-66867bcb8c-jqxjp:/$ curl -I -x http://193.34.0.142:8080 http://centos.schlundtech.de/ -vk
-
-*   Trying 193.34.0.142:8080...
-
-* Connected to 193.34.0.142 (193.34.0.142) port 8080
-
-* using HTTP/1.x
-> HEAD http://centos.schlundtech.de/ HTTP/1.1
-> Host: centos.schlundtech.de
-> User-Agent: curl/8.14.1
-> Accept: */*
-> Proxy-Connection: Keep-Alive
-> 
-
-* Request completely sent off
-< HTTP/1.1 200 OK
-
-HTTP/1.1 200 OK
-< via: 1.1 192.168.80.6 (Skyhigh Secure Web Gateway 12.2.22.56694)
-
-via: 1.1 192.168.80.6 (Skyhigh Secure Web Gateway 12.2.22.56694)
-< date: Wed, 16 Sep 2026 08:10:57 GMT
-
-date: Wed, 16 Sep 2026 08:10:57 GMT
-< content-type: text/html
-
-content-type: text/html
-< transfer-encoding: chunked
-
-transfer-encoding: chunked
-<
- 
-* Connection #0 to host 193.34.0.142 left intact
-
-jenkins@jenkins-66867bcb8c-jqxjp:/$
- 
- 
-https:
- 
-jenkins@jenkins-66867bcb8c-jqxjp:/$ curl -I -x http://193.34.0.142:8080 https://centos.schlundtech.de/ -vk
-
-*   Trying 193.34.0.142:8080...
-
-* CONNECT tunnel: HTTP/1.1 negotiated
-
-* allocate connect buffer
-
-* Establish HTTP proxy tunnel to centos.schlundtech.de:443
-> CONNECT centos.schlundtech.de:443 HTTP/1.1
-> Host: centos.schlundtech.de:443
-> User-Agent: curl/8.14.1
-> Proxy-Connection: Keep-Alive
-> 
-< HTTP/1.1 404 Not Found
-
-HTTP/1.1 404 Not Found
-< date: Wed, 16 Sep 2026 08:11:06 GMT
-
-date: Wed, 16 Sep 2026 08:11:06 GMT
-< connection: close
-
-connection: close
-< content-length: 0
-
-content-length: 0
-<
- 
-* CONNECT tunnel failed, response 404
-
-* closing connection #0
-
-curl: (56) CONNECT tunnel failed, response 404
-
-jenkins@jenkins-66867bcb8c-jqxjp:/$
-Index of /
- 
-let me check
- 
+#time_stamp "auth_user" src_ip status_code "req_line" "categories" "rep_level" "media_type" bytes_to_client bytes_from_client "user_agent" "virus_name" "block_res" "application_name"
+[16/Sep/2026:00:36:52 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 8090 918 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:36:53 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 7605 916 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:36:53 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 7582 916 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:45:53 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 9178 1989 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:45:53 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 9176 1989 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:45:53 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 3769091 2272 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:45:53 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 21837554 2087 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:45:53 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 550602 2012 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:45:57 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 8692 1987 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:45:57 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 8670 1987 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:45:58 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 34182797 2282 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:45:58 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 2323518 2015 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:45:58 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 292878 2010 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:46:01 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 8671 1987 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:46:01 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 8668 1987 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:46:01 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 14362 2014 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:46:01 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 9185 2014 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:46:01 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 13822 2020 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:47:41 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 9178 1989 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
+[16/Sep/2026:00:47:41 +0200] "" 192.168.70.36 200 "CONNECT repo.almalinux.org:443 HTTP/1.1" "" "-" "" 9177 1989 "libdnf (AlmaLinux 9.8; generic; Linux.x86_64)" "" "0" ""
