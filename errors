@@ -1,28 +1,24 @@
 # =============================================================================
-# Script      : Export-OpenCostFinOps.ps1
+# Script      : Export-OpenCostFinOps-XLSX.ps1
 # Description : Parse un export JSON OpenCost, extrait les métriques FinOps, 
-#               arrondit les coûts, trie par coût total et génère un CSV 
-#               compatible Excel FR (séparateur point-virgule, virgules pour décimales).
+#               arrondit les coûts, et génère un vrai fichier Excel (.xlsx) formatté.
+# Prérequis   : Install-Module -Name ImportExcel
 # =============================================================================
 
 $jsonFilePath = "compute.json"
-$csvFilePath  = "OpenCost_Export.csv"
+$xlsxFilePath = "OpenCost_Export.xlsx" # Changement de l'extension ici
 
-# 1. Vérification de l'existence du fichier JSON
 if (-not (Test-Path -Path $jsonFilePath)) {
-    Write-Error "Le fichier $jsonFilePath est introuvable dans le répertoire courant."
+    Write-Error "Le fichier $jsonFilePath est introuvable."
     exit
 }
 
 Write-Host "Lecture du fichier $jsonFilePath..." -ForegroundColor Cyan
 
-# 2. Lecture et parsing du JSON
+# 1. Lecture et parsing du JSON
 $json = Get-Content -Path $jsonFilePath -Raw | ConvertFrom-Json
 $data = $json.data
 
-# Gestion de la structure OpenCost :
-# L'API renvoie parfois `data` comme un tableau de dictionnaires (par fenêtre de temps).
-# On aplatit la structure pour récupérer directement la liste des objets.
 $items = @()
 if ($data -is [array] -and $data.Count -eq 1 -and $data[0].GetType().Name -eq "PSCustomObject") {
     $items = $data[0].psobject.properties.Value
@@ -32,53 +28,41 @@ if ($data -is [array] -and $data.Count -eq 1 -and $data[0].GetType().Name -eq "P
     $items = $data
 }
 
-# 3. Extraction, conversion et arrondi des métriques
+# 2. Extraction et arrondi (on garde le type [double] pour Excel)
 $processedItems = foreach ($item in $items) {
-    # On vérifie que l'item n'est pas nul et a un nom (pour éviter les objets vides ou métadonnées)
     if (-not [string]::IsNullOrWhiteSpace($item.name)) {
         [PSCustomObject]@{
             Name             = $item.name
             Cluster          = $item.properties.cluster
-            # On stocke d'abord en numérique pour pouvoir effectuer le tri
-            NumCpuCost       = [Math]::Round([double]$item.cpuCost, 2)
-            NumRamCost       = [Math]::Round([double]$item.ramCost, 2)
-            NumPvCost        = [Math]::Round([double]$item.pvCost, 2)
-            NumNetworkCost   = [Math]::Round([double]$item.networkCost, 2)
-            NumLbCost        = [Math]::Round([double]$item.loadBalancerCost, 2)
-            NumSharedCost    = [Math]::Round([double]$item.sharedCost, 2)
-            NumTotalCost     = [Math]::Round([double]$item.totalCost, 2)
+            CpuCost          = [Math]::Round([double]$item.cpuCost, 2)
+            RamCost          = [Math]::Round([double]$item.ramCost, 2)
+            PvCost           = [Math]::Round([double]$item.pvCost, 2)
+            NetworkCost      = [Math]::Round([double]$item.networkCost, 2)
+            LoadBalancerCost = [Math]::Round([double]$item.loadBalancerCost, 2)
+            SharedCost       = [Math]::Round([double]$item.sharedCost, 2)
+            TotalCost        = [Math]::Round([double]$item.totalCost, 2)
         }
     }
 }
 
-# 4. Tri par TotalCost (les plus gros consommateurs en premier)
-$sortedItems = $processedItems | Sort-Object NumTotalCost -Descending
+# 3. Tri par TotalCost descendant
+$sortedItems = $processedItems | Sort-Object TotalCost -Descending
 
-# 5. Formatage des données pour Excel FR (transformation du '.' en ',')
-# Utilisation de la culture française pour un cast de string parfait (ex: 62.52 -> 62,52)
-$culture = [System.Globalization.CultureInfo]::GetCultureInfo("fr-FR")
+# 4. Génération du fichier Excel (.xlsx)
+# Si le fichier existe déjà, il sera écrasé proprement
+Write-Host "Création du fichier Excel..." -ForegroundColor Cyan
 
-$finalExport = foreach ($row in $sortedItems) {
-    [PSCustomObject]@{
-        Name             = $row.Name
-        Cluster          = $row.Cluster
-        CpuCost          = $row.NumCpuCost.ToString($culture)
-        RamCost          = $row.NumRamCost.ToString($culture)
-        PvCost           = $row.NumPvCost.ToString($culture)
-        NetworkCost      = $row.NumNetworkCost.ToString($culture)
-        LoadBalancerCost = $row.NumLbCost.ToString($culture)
-        SharedCost       = $row.NumSharedCost.ToString($culture)
-        TotalCost        = $row.NumTotalCost.ToString($culture)
-    }
-}
+$sortedItems | Export-Excel -Path $xlsxFilePath -WorksheetName "FinOps OpenCost" `
+    -ClearSheet `
+    -AutoSize `
+    -FreezeTopRow `
+    -BoldTopRow `
+    -TableName "DonneesFinOps" `
+    -TableStyle Medium2 `
+    -NumberFormat "#,##0.00 €"
 
-# 6. Exportation vers le fichier CSV
-# UTF8 et délimiteur point-virgule (;) indispensable pour Excel FR
-$finalExport | Export-Csv -Path $csvFilePath -Delimiter ';' -Encoding UTF8 -NoTypeInformation
+Write-Host "`nAperçu des plus gros consommateurs (Top 5) :" -ForegroundColor Yellow
+$sortedItems | Select-Object Name, Cluster, CpuCost, RamCost, PvCost, TotalCost | Select-Object -First 5 | Format-Table -AutoSize
 
-# 7. Aperçu en console
-Write-Host "`nAperçu des plus gros consommateurs (Top 10) :" -ForegroundColor Yellow
-$finalExport | Select-Object Name, Cluster, CpuCost, RamCost, PvCost, TotalCost | Select-Object -First 10 | Format-Table -AutoSize
-
-Write-Host "Export terminé avec succès !" -ForegroundColor Green
-Write-Host "Fichier généré : $(Resolve-Path $csvFilePath)" -ForegroundColor Green
+Write-Host "Export Excel terminé avec succès !" -ForegroundColor Green
+Write-Host "Fichier généré : $(Resolve-Path $xlsxFilePath)" -ForegroundColor Green
