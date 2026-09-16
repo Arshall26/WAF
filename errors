@@ -1,24 +1,26 @@
 # =============================================================================
-# Script      : Export-OpenCostFinOps-XLSX.ps1
+# Script      : Export-OpenCostFinOps.ps1
 # Description : Parse un export JSON OpenCost, extrait les métriques FinOps, 
-#               arrondit les coûts, et génère un vrai fichier Excel (.xlsx) formatté.
-# Prérequis   : Install-Module -Name ImportExcel
+#               arrondit les coûts, trie par coût total et génère un CSV 
+#               optimisé pour un import direct via Power Query (séparateur décimal = point).
 # =============================================================================
 
 $jsonFilePath = "compute.json"
-$xlsxFilePath = "OpenCost_Export.xlsx" # Changement de l'extension ici
+$csvFilePath  = "OpenCost_Export.csv"
 
+# 1. Vérification de l'existence du fichier JSON
 if (-not (Test-Path -Path $jsonFilePath)) {
-    Write-Error "Le fichier $jsonFilePath est introuvable."
+    Write-Error "Le fichier $jsonFilePath est introuvable dans le répertoire courant."
     exit
 }
 
 Write-Host "Lecture du fichier $jsonFilePath..." -ForegroundColor Cyan
 
-# 1. Lecture et parsing du JSON
+# 2. Lecture et parsing du JSON
 $json = Get-Content -Path $jsonFilePath -Raw | ConvertFrom-Json
 $data = $json.data
 
+# Gestion de la structure OpenCost (extraction des objets selon le niveau d'imbrication)
 $items = @()
 if ($data -is [array] -and $data.Count -eq 1 -and $data[0].GetType().Name -eq "PSCustomObject") {
     $items = $data[0].psobject.properties.Value
@@ -28,7 +30,7 @@ if ($data -is [array] -and $data.Count -eq 1 -and $data[0].GetType().Name -eq "P
     $items = $data
 }
 
-# 2. Extraction et arrondi (on garde le type [double] pour Excel)
+# 3. Extraction et arrondi strict à 2 décimales
 $processedItems = foreach ($item in $items) {
     if (-not [string]::IsNullOrWhiteSpace($item.name)) {
         [PSCustomObject]@{
@@ -45,24 +47,17 @@ $processedItems = foreach ($item in $items) {
     }
 }
 
-# 3. Tri par TotalCost descendant
+# 4. Tri par TotalCost (les plus gros consommateurs en premier)
 $sortedItems = $processedItems | Sort-Object TotalCost -Descending
 
-# 4. Génération du fichier Excel (.xlsx)
-# Si le fichier existe déjà, il sera écrasé proprement
-Write-Host "Création du fichier Excel..." -ForegroundColor Cyan
+# 5. Exportation vers le fichier CSV
+# On conserve les valeurs numériques brutes (avec le point). 
+# Power Query les interprétera parfaitement lors du "Load Data from CSV".
+$sortedItems | Export-Csv -Path $csvFilePath -Delimiter ';' -Encoding UTF8 -NoTypeInformation
 
-$sortedItems | Export-Excel -Path $xlsxFilePath -WorksheetName "FinOps OpenCost" `
-    -ClearSheet `
-    -AutoSize `
-    -FreezeTopRow `
-    -BoldTopRow `
-    -TableName "DonneesFinOps" `
-    -TableStyle Medium2 `
-    -NumberFormat "#,##0.00 €"
+# 6. Aperçu en console
+Write-Host "`nAperçu des plus gros consommateurs (Top 10) :" -ForegroundColor Yellow
+$sortedItems | Select-Object Name, Cluster, CpuCost, RamCost, PvCost, TotalCost | Select-Object -First 10 | Format-Table -AutoSize
 
-Write-Host "`nAperçu des plus gros consommateurs (Top 5) :" -ForegroundColor Yellow
-$sortedItems | Select-Object Name, Cluster, CpuCost, RamCost, PvCost, TotalCost | Select-Object -First 5 | Format-Table -AutoSize
-
-Write-Host "Export Excel terminé avec succès !" -ForegroundColor Green
-Write-Host "Fichier généré : $(Resolve-Path $xlsxFilePath)" -ForegroundColor Green
+Write-Host "Export terminé avec succès !" -ForegroundColor Green
+Write-Host "Fichier généré : $(Resolve-Path $csvFilePath)" -ForegroundColor Green
