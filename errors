@@ -1,63 +1,53 @@
-# =============================================================================
-# Script      : Export-OpenCostFinOps.ps1
-# Description : Parse un export JSON OpenCost, extrait les métriques FinOps, 
-#               arrondit les coûts, trie par coût total et génère un CSV 
-#               optimisé pour un import direct via Power Query (séparateur décimal = point).
-# =============================================================================
+#1
+358aee5c-5c47-9494-0d4e-0cdcfe326dfd
+9/21/2026, 11:23:06.546 AM
+920320
+Matched
+Missing User Agent Header
+OWASP CRS 3.2
+REQUEST-920-PROTOCOL-ENFORCEMENT
+Equal 0 at REQUEST_HEADERS:user-agent.
+sgef.sgmarkets.com
+APPGW-SAS-INBOUND-BES-APPGW01-NORTHEUROPE
+194.119.40.142
+/customer-portal
 
-$jsonFilePath = "compute.json"
-$csvFilePath  = "OpenCost_Export.csv"
+#2
+ed660e63-f5d4-72db-083a-6f8e2f93a5c1
+9/21/2026, 11:23:06.546 AM
+300700
+Matched
+'Other bots'
+Microsoft_BotManagerRuleSet 1.1
+UnknownBots
+one.equipmentsolutions.groupebpce.com
+APPGW-SAS-INBOUND-BES-APPGW01-NORTHEUROPE
+20.67.136.139
+/auth/realms/bpcees/protocol/openid-connect/certs
 
-# 1. Vérification de l'existence du fichier JSON
-if (-not (Test-Path -Path $jsonFilePath)) {
-    Write-Error "Le fichier $jsonFilePath est introuvable dans le répertoire courant."
-    exit
-}
+#3
+ed660e63-f5d4-72db-083a-6f8e2f93a5c1
+9/21/2026, 11:23:06.546 AM
+300300
+Matched
+'General purpose HTTP clients and SDKs'
+Microsoft_BotManagerRuleSet 1.1
+UnknownBots
+one.equipmentsolutions.groupebpce.com
+APPGW-SAS-INBOUND-BES-APPGW01-NORTHEUROPE
+20.67.136.139
+/auth/realms/bpcees/protocol/openid-connect/certs
 
-Write-Host "Lecture du fichier $jsonFilePath..." -ForegroundColor Cyan
-
-# 2. Lecture et parsing du JSON
-$json = Get-Content -Path $jsonFilePath -Raw | ConvertFrom-Json
-$data = $json.data
-
-# Gestion de la structure OpenCost (extraction des objets selon le niveau d'imbrication)
-$items = @()
-if ($data -is [array] -and $data.Count -eq 1 -and $data[0].GetType().Name -eq "PSCustomObject") {
-    $items = $data[0].psobject.properties.Value
-} elseif ($data.GetType().Name -eq "PSCustomObject") {
-    $items = $data.psobject.properties.Value
-} else {
-    $items = $data
-}
-
-# 3. Extraction et arrondi strict à 2 décimales
-$processedItems = foreach ($item in $items) {
-    if (-not [string]::IsNullOrWhiteSpace($item.name)) {
-        [PSCustomObject]@{
-            Name             = $item.name
-            Cluster          = $item.properties.cluster
-            CpuCost          = [Math]::Round([double]$item.cpuCost, 2)
-            RamCost          = [Math]::Round([double]$item.ramCost, 2)
-            PvCost           = [Math]::Round([double]$item.pvCost, 2)
-            NetworkCost      = [Math]::Round([double]$item.networkCost, 2)
-            LoadBalancerCost = [Math]::Round([double]$item.loadBalancerCost, 2)
-            SharedCost       = [Math]::Round([double]$item.sharedCost, 2)
-            TotalCost        = [Math]::Round([double]$item.totalCost, 2)
-        }
-    }
-}
-
-# 4. Tri par TotalCost (les plus gros consommateurs en premier)
-$sortedItems = $processedItems | Sort-Object TotalCost -Descending
-
-# 5. Exportation vers le fichier CSV
-# On conserve les valeurs numériques brutes (avec le point). 
-# Power Query les interprétera parfaitement lors du "Load Data from CSV".
-$sortedItems | Export-Csv -Path $csvFilePath -Delimiter ';' -Encoding UTF8 -NoTypeInformation
-
-# 6. Aperçu en console
-Write-Host "`nAperçu des plus gros consommateurs (Top 10) :" -ForegroundColor Yellow
-$sortedItems | Select-Object Name, Cluster, CpuCost, RamCost, PvCost, TotalCost | Select-Object -First 10 | Format-Table -AutoSize
-
-Write-Host "Export terminé avec succès !" -ForegroundColor Green
-Write-Host "Fichier généré : $(Resolve-Path $csvFilePath)" -ForegroundColor Green
+#4
+4fe7189b-fe5f-74c8-b94b-685a189f49aa
+9/21/2026, 2:18:21.338 PM
+920300
+Matched
+Request Missing an Accept Header
+OWASP CRS 3.2
+REQUEST-920-PROTOCOL-ENFORCEMENT
+Equal 0; Pattern match ^OPTIONS$; Pattern match AppleWebKit Android at REQUEST_HEADERS:user-agent.
+sgef.sgmarkets.com
+APPGW-SAS-INBOUND-BES-APPGW01-NORTHEUROPE
+52.112.103.76
+/protectel-gateway/swagger-ui/oauth2-redirect.html
