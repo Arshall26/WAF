@@ -1,53 +1,14 @@
-#1
-358aee5c-5c47-9494-0d4e-0cdcfe326dfd
-9/21/2026, 11:23:06.546 AM
-920320
-Matched
-Missing User Agent Header
-OWASP CRS 3.2
-REQUEST-920-PROTOCOL-ENFORCEMENT
-Equal 0 at REQUEST_HEADERS:user-agent.
-sgef.sgmarkets.com
-APPGW-SAS-INBOUND-BES-APPGW01-NORTHEUROPE
-194.119.40.142
-/customer-portal
+FinOps Initiative: Azure Site Recovery (ASR) Smart Tiering Campaign
 
-#2
-ed660e63-f5d4-72db-083a-6f8e2f93a5c1
-9/21/2026, 11:23:06.546 AM
-300700
-Matched
-'Other bots'
-Microsoft_BotManagerRuleSet 1.1
-UnknownBots
-one.equipmentsolutions.groupebpce.com
-APPGW-SAS-INBOUND-BES-APPGW01-NORTHEUROPE
-20.67.136.139
-/auth/realms/bpcees/protocol/openid-connect/certs
+Agenda:
+Please join this brief alignment meeting regarding our upcoming FinOps Smart Tiering rollout for disaster recovery environments. We are optimizing our Azure infrastructure costs by transitioning passive ASR replica disks in secondary regions from Premium SSD to Standard HDD.
 
-#3
-ed660e63-f5d4-72db-083a-6f8e2f93a5c1
-9/21/2026, 11:23:06.546 AM
-300300
-Matched
-'General purpose HTTP clients and SDKs'
-Microsoft_BotManagerRuleSet 1.1
-UnknownBots
-one.equipmentsolutions.groupebpce.com
-APPGW-SAS-INBOUND-BES-APPGW01-NORTHEUROPE
-20.67.136.139
-/auth/realms/bpcees/protocol/openid-connect/certs
+Key Points for Your Applications:
 
-#4
-4fe7189b-fe5f-74c8-b94b-685a189f49aa
-9/21/2026, 2:18:21.338 PM
-920300
-Matched
-Request Missing an Accept Header
-OWASP CRS 3.2
-REQUEST-920-PROTOCOL-ENFORCEMENT
-Equal 0; Pattern match ^OPTIONS$; Pattern match AppleWebKit Android at REQUEST_HEADERS:user-agent.
-sgef.sgmarkets.com
-APPGW-SAS-INBOUND-BES-APPGW01-NORTHEUROPE
-52.112.103.76
-/protectel-gateway/swagger-ui/oauth2-redirect.html
+Zero Business Impact: This operation strictly targets the passive replication infrastructure.
+
+Zero Performance Impact: Your production workloads and active environments remain completely untouched and unaffected.
+
+Automated Scaling: Our deployment ensures that RTO and RPO targets are maintained without manual intervention from your teams.
+
+We will provide a quick overview of the technical mechanism behind this optimization and share the upcoming rollout schedule for your respective applications.
