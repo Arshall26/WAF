@@ -1,41 +1,14 @@
-requestUri_s,"Transactions"
-/assets/,724
-/assets/xmlrpc.php,554
-/img/,359
-/assets,173
-/wp-admin/admin-ajax.php,153
-/q79w_38jg__.shtml,153
-/assets/?Proxy,148
-/assets/?Content-Type,148
-/assets/wp-admin/admin-ajax.php,120
-/login,99
-/assets/?Cookie,86
-/xmlrpc.php,78
-/.git/config,62
-/.env,55
-/.svn/entries,52
-/.htaccess,48
-/index.php,46
-/.svn/text-base,45
-/validate,45
-/.htaccess.bak,45
-/.svn/prop-base,45
-/sgef-origination-services/api/v1/credit-lines/392/conclusions/4529,44
-/access.log,43
-/mysql_access.txt.bak,42
-/sgmarkets-access.log,42
-/database_access.log,42
-/admin_access.txt.bak,42
-/ssh_access.log,42
-/root_access.log,42
-/web-access.txt.bak,42
-/ssh_access.txt.bak,42
-/web-access.log,42
-/admin_access.log,42
-/sgmarkets-access.txt.bak,42
-/access.txt.bak,42
-/root_access.txt.bak,42
-/mysql_access.log,42
-/database_access.txt.bak,42
-/apply_sec.cgi,41
-/sbs-api/v1/graphql,40
+AzureDiagnostics
+| where Category == "ApplicationGatewayFirewallLog"
+| where hostname_s == "sgef.sgmarkets.com"
+| project 
+    TimeGenerated,
+    Action = action_s,                 // "Matched" ou "Blocked"
+    ClientIP = clientIp_s,             // L'IP de l'attaquant ou du client
+    RequestURI = requestUri_s,         // L'URL exacte tapée après le .com
+    RuleGroup = ruleGroup_s,           // La famille de la règle (ex: BotManager, SQLi)
+    RuleID = ruleId_s,                 // L'ID de la règle (ex: 920320, 300700)
+    Message = Message,                 // La description du blocage
+    MatchDetails = details_message_s,  // Le nom du paramètre en cause (ex: Cookie, Header)
+    MatchData = details_data_s         // La valeur exacte du paramètre
+| sort by TimeGenerated desc
