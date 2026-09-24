@@ -1,14 +1,41 @@
-FinOps Initiative: Azure Site Recovery (ASR) Smart Tiering Campaign
-
-Agenda:
-Please join this brief alignment meeting regarding our upcoming FinOps Smart Tiering rollout for disaster recovery environments. We are optimizing our Azure infrastructure costs by transitioning passive ASR replica disks in secondary regions from Premium SSD to Standard HDD.
-
-Key Points for Your Applications:
-
-Zero Business Impact: This operation strictly targets the passive replication infrastructure.
-
-Zero Performance Impact: Your production workloads and active environments remain completely untouched and unaffected.
-
-Automated Scaling: Our deployment ensures that RTO and RPO targets are maintained without manual intervention from your teams.
-
-We will provide a quick overview of the technical mechanism behind this optimization and share the upcoming rollout schedule for your respective applications.
+requestUri_s,"Transactions"
+/assets/,724
+/assets/xmlrpc.php,554
+/img/,359
+/assets,173
+/wp-admin/admin-ajax.php,153
+/q79w_38jg__.shtml,153
+/assets/?Proxy,148
+/assets/?Content-Type,148
+/assets/wp-admin/admin-ajax.php,120
+/login,99
+/assets/?Cookie,86
+/xmlrpc.php,78
+/.git/config,62
+/.env,55
+/.svn/entries,52
+/.htaccess,48
+/index.php,46
+/.svn/text-base,45
+/validate,45
+/.htaccess.bak,45
+/.svn/prop-base,45
+/sgef-origination-services/api/v1/credit-lines/392/conclusions/4529,44
+/access.log,43
+/mysql_access.txt.bak,42
+/sgmarkets-access.log,42
+/database_access.log,42
+/admin_access.txt.bak,42
+/ssh_access.log,42
+/root_access.log,42
+/web-access.txt.bak,42
+/ssh_access.txt.bak,42
+/web-access.log,42
+/admin_access.log,42
+/sgmarkets-access.txt.bak,42
+/access.txt.bak,42
+/root_access.txt.bak,42
+/mysql_access.log,42
+/database_access.txt.bak,42
+/apply_sec.cgi,41
+/sbs-api/v1/graphql,40
