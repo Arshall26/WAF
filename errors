@@ -1,14 +1,32 @@
-AzureDiagnostics
-| where Category == "ApplicationGatewayFirewallLog"
-| where hostname_s == "sgef.sgmarkets.com"
-| project 
-    TimeGenerated,
-    Action = action_s,                 // "Matched" ou "Blocked"
-    ClientIP = clientIp_s,             // L'IP de l'attaquant ou du client
-    RequestURI = requestUri_s,         // L'URL exacte tapée après le .com
-    RuleGroup = ruleGroup_s,           // La famille de la règle (ex: BotManager, SQLi)
-    RuleID = ruleId_s,                 // L'ID de la règle (ex: 920320, 300700)
-    Message = Message,                 // La description du blocage
-    MatchDetails = details_message_s,  // Le nom du paramètre en cause (ex: Cookie, Header)
-    MatchData = details_data_s         // La valeur exacte du paramètre
-| sort by TimeGenerated desc
+j'avais fais un powerpoint en 3 slide pr expliquer, je veux que tu reprennes ca pour expliquer au début
+
+SLIDE 1 : ASR Context & The Storage Challenge
+How Azure Site Recovery (ASR) Works: ASR provides continuous disaster recovery by capturing VM disk writes in production, sending them to a temporary cache, and then applying them to passive "replica disks" in the DR region.
+
+The Default Behavior: By default, ASR strictly mirrors the production infrastructure. If a production VM uses a high-performance Premium SSD, ASR automatically provisions an identical Premium SSD in the DR region to hold the replicated data.
+
+The Financial Waste: Managed disks are billed on provisioned capacity, not usage. This means we are paying top-tier prices for high IOPS and throughput on passive, dormant disks that only receive background replication data.
+
+SLIDE 2 : The Optimized Architecture (Smart Tiering)
+The Solution: We will decouple the target storage. Since our monitoring shows the average data churn is well below 8 MB/s (1), Azure fully supports replicating this data directly onto highly cost-effective Standard HDDs.
+
+Zero Performance Loss on DR: We do not sacrifice production performance during an actual disaster.
+
+We will integrate a PowerShell Runbook via Azure Automation into our ASR Recovery Plan. During a failover event, this script automatically updates the disk SKU from Standard HDD back to Premium SSD while the VM boots up.
+
+SLIDE 3 : Financial impact
+
+Current Infrastructure Spend
+~$69,000 / month consumed by ASR resource groups currently running on passive Premium SSDs.
+
+-67%
+Target Infrastructure Spend
+
+$23,000 / month
+
+The Optimization: Downgrading the dormant replica disks to Standard HDD reduces the raw disk provisioning costs by roughly 67%. Premium costs are only incurred during an actual disaster or DR drill.
+
+Projected Savings: $45,000 / month.
+
+Yearly Impact: Over $500,000 saved annually.
+
