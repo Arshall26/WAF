@@ -1,13 +1,13 @@
-# Fichier : waf_api_gefa_a_de.tf
+# Fichier : waf_api_gefa_de.tf
 
 # ⚠️ Le bloc de migration : empêche Terraform de détruire/recréer la policy
 moved {
-  from = azurerm_web_application_firewall_policy.waf_policies["api.gefa-a.de"]
-  to   = azurerm_web_application_firewall_policy.api_gefa_a_de
+  from = azurerm_web_application_firewall_policy.waf_policies["api.gefa.de"]
+  to   = azurerm_web_application_firewall_policy.api_gefa_de
 }
 
-resource "azurerm_web_application_firewall_policy" "api_gefa_a_de" {
-  name                = "api.gefa-a.de"
+resource "azurerm_web_application_firewall_policy" "api_gefa_de" {
+  name                = "api.gefa.de"
   resource_group_name = var.rg_name
   location            = var.location # Le JSON indique "germanywestcentral", l'utilisation de ta variable garde le code dynamique
 
