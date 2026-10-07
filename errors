@@ -1,1 +1,73 @@
-https://learn.microsoft.com/en-us/answers/questions/6025662/is-there-any-official-announcement-for-azure-vm-in
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "ApplicationGatewayWebApplicationFirewallPolicies_api_gefa_a_de_name": {
+            "defaultValue": "api.gefa-a.de",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies",
+            "apiVersion": "2025-07-01",
+            "name": "[parameters('ApplicationGatewayWebApplicationFirewallPolicies_api_gefa_a_de_name')]",
+            "location": "germanywestcentral",
+            "properties": {
+                "customRules": [
+                    {
+                        "name": "AllowApi",
+                        "priority": 10,
+                        "ruleType": "MatchRule",
+                        "action": "Allow",
+                        "matchConditions": [
+                            {
+                                "matchVariables": [
+                                    {
+                                        "variableName": "RequestUri"
+                                    }
+                                ],
+                                "operator": "Contains",
+                                "negationConditon": false,
+                                "matchValues": [
+                                    "adtrunc/v",
+                                    "/graphql",
+                                    "/v2"
+                                ],
+                                "transforms": []
+                            }
+                        ],
+                        "state": "Enabled"
+                    }
+                ],
+                "policySettings": {
+                    "requestBodyCheck": true,
+                    "maxRequestBodySizeInKb": 1024,
+                    "fileUploadLimitInMb": 100,
+                    "state": "Enabled",
+                    "mode": "Prevention",
+                    "jsChallengeCookieExpirationInMins": 30,
+                    "requestBodyInspectLimitInKB": 1024,
+                    "fileUploadEnforcement": true,
+                    "requestBodyEnforcement": true
+                },
+                "managedRules": {
+                    "managedRuleSets": [
+                        {
+                            "ruleSetType": "Microsoft_DefaultRuleSet",
+                            "ruleSetVersion": "2.1",
+                            "ruleGroupOverrides": []
+                        },
+                        {
+                            "ruleSetType": "Microsoft_BotManagerRuleSet",
+                            "ruleSetVersion": "1.0",
+                            "ruleGroupOverrides": []
+                        }
+                    ],
+                    "exclusions": []
+                }
+            }
+        }
+    ]
+}
