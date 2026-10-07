@@ -1,105 +1,297 @@
-# Fichier : waf_one_equipmentsolutions.tf
-
-# ⚠️ BLOC IMPORT avec la souscription en dur et le RG en variable
-import {
-  to = azurerm_web_application_firewall_policy.one_equipmentsolutions
-  id = "/subscriptions/d12989f0-afeb-4232-bcca-9965b4570d87/resourceGroups/${var.rg_name}/providers/Microsoft.Network/applicationGatewayWebApplicationFirewallPolicies/one.equipmentsolutions.groupebpce.com"
-}
-
-resource "azurerm_web_application_firewall_policy" "one_equipmentsolutions" {
-  name                = "one.equipmentsolutions.groupebpce.com"
-  resource_group_name = var.rg_name
-  location            = var.location
-
-  policy_settings {
-    enabled                          = true
-    mode                             = "Detection" # ⚠️ Repris de ton export JSON
-    request_body_check               = true
-    max_request_body_size_in_kb      = 1024
-    file_upload_limit_in_mb          = 100
-    request_body_inspect_limit_in_kb = 1024
-  }
-
-  # ==========================================
-  # CUSTOM RULES (3 Règles)
-  # ==========================================
-  custom_rules {
-    name      = "AllowApi"
-    priority  = 10
-    rule_type = "MatchRule"
-    action    = "Allow"
-    
-    match_conditions {
-      match_variables {
-        variable_name = "RequestUri"
-      }
-      operator     = "Contains"
-      match_values = [
-        "api/v",
-        "/api/p"
-      ]
-    }
-  }
-
-  custom_rules {
-    name      = "Allow"
-    priority  = 11
-    rule_type = "MatchRule"
-    action    = "Allow"
-    
-    match_conditions {
-      match_variables {
-        variable_name = "RequestUri"
-      }
-      operator     = "Contains"
-      match_values = [
-        "/graphql"
-      ]
-    }
-  }
-
-  custom_rules {
-    name      = "AllowToken"
-    priority  = 12
-    rule_type = "MatchRule"
-    action    = "Allow"
-    
-    match_conditions {
-      match_variables {
-        variable_name = "RequestUri"
-      }
-      operator     = "Contains"
-      match_values = [
-        "/one-authentication-client/",
-        "/auth/realms/bpcees/"
-      ]
-    }
-  }
-
-  # ==========================================
-  # MANAGED RULES (3 Moteurs + 1 Exclusion globale)
-  # ==========================================
-  managed_rules {
-    # Exclusion Globale
-    exclusion {
-      match_variable          = "RequestCookieValues"
-      selector_match_operator = "StartsWith"
-      selector                = "_pk_"
-    }
-
-    managed_rule_set {
-      type    = "Microsoft_DefaultRuleSet"
-      version = "2.2"
-    }
-
-    managed_rule_set {
-      type    = "Microsoft_BotManagerRuleSet"
-      version = "1.1"
-    }
-
-    managed_rule_set {
-      type    = "Microsoft_HTTPDDoSRuleSet"
-      version = "1.0"
-    }
-  }
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "ApplicationGatewayWebApplicationFirewallPolicies_smartbalancesheet_sgmarkets_com_name": {
+            "defaultValue": "smartbalancesheet.sgmarkets.com",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies",
+            "apiVersion": "2025-07-01",
+            "name": "[parameters('ApplicationGatewayWebApplicationFirewallPolicies_smartbalancesheet_sgmarkets_com_name')]",
+            "location": "northeurope",
+            "properties": {
+                "customRules": [
+                    {
+                        "name": "AllowAPI",
+                        "priority": 10,
+                        "ruleType": "MatchRule",
+                        "action": "Allow",
+                        "matchConditions": [
+                            {
+                                "matchVariables": [
+                                    {
+                                        "variableName": "RequestUri"
+                                    }
+                                ],
+                                "operator": "Contains",
+                                "negationConditon": false,
+                                "matchValues": [
+                                    "api/v",
+                                    "/api/p"
+                                ],
+                                "transforms": []
+                            }
+                        ],
+                        "state": "Enabled"
+                    },
+                    {
+                        "name": "Allow",
+                        "priority": 11,
+                        "ruleType": "MatchRule",
+                        "action": "Allow",
+                        "matchConditions": [
+                            {
+                                "matchVariables": [
+                                    {
+                                        "variableName": "RequestUri"
+                                    }
+                                ],
+                                "operator": "Contains",
+                                "negationConditon": false,
+                                "matchValues": [
+                                    "/graphql"
+                                ],
+                                "transforms": []
+                            }
+                        ],
+                        "state": "Enabled"
+                    },
+                    {
+                        "name": "AllowToken",
+                        "priority": 12,
+                        "ruleType": "MatchRule",
+                        "action": "Allow",
+                        "matchConditions": [
+                            {
+                                "matchVariables": [
+                                    {
+                                        "variableName": "RequestUri"
+                                    }
+                                ],
+                                "operator": "Contains",
+                                "negationConditon": false,
+                                "matchValues": [
+                                    "/one-authentication-client/",
+                                    "/auth/realms/bpcees/"
+                                ],
+                                "transforms": []
+                            }
+                        ],
+                        "state": "Enabled"
+                    }
+                ],
+                "policySettings": {
+                    "requestBodyCheck": true,
+                    "maxRequestBodySizeInKb": 1024,
+                    "fileUploadLimitInMb": 100,
+                    "state": "Enabled",
+                    "mode": "Prevention",
+                    "jsChallengeCookieExpirationInMins": 30,
+                    "requestBodyInspectLimitInKB": 1024,
+                    "fileUploadEnforcement": true,
+                    "requestBodyEnforcement": true
+                },
+                "managedRules": {
+                    "managedRuleSets": [
+                        {
+                            "ruleSetType": "OWASP",
+                            "ruleSetVersion": "3.2",
+                            "ruleGroupOverrides": [
+                                {
+                                    "ruleGroupName": "General",
+                                    "rules": [
+                                        {
+                                            "ruleId": "200004",
+                                            "state": "Disabled",
+                                            "action": "AnomalyScoring"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "ruleGroupName": "REQUEST-932-APPLICATION-ATTACK-RCE",
+                                    "rules": [
+                                        {
+                                            "ruleId": "932100",
+                                            "state": "Disabled",
+                                            "action": "AnomalyScoring"
+                                        },
+                                        {
+                                            "ruleId": "932110",
+                                            "state": "Disabled",
+                                            "action": "AnomalyScoring"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "ruleGroupName": "REQUEST-942-APPLICATION-ATTACK-SQLI",
+                                    "rules": [
+                                        {
+                                            "ruleId": "942430",
+                                            "state": "Disabled",
+                                            "action": "AnomalyScoring"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "ruleSetType": "Microsoft_BotManagerRuleSet",
+                            "ruleSetVersion": "1.1",
+                            "ruleGroupOverrides": [
+                                {
+                                    "ruleGroupName": "BadBots",
+                                    "rules": [
+                                        {
+                                            "ruleId": "100100",
+                                            "state": "Disabled",
+                                            "action": "Block"
+                                        },
+                                        {
+                                            "ruleId": "100200",
+                                            "state": "Disabled",
+                                            "action": "Block"
+                                        },
+                                        {
+                                            "ruleId": "100300",
+                                            "state": "Disabled",
+                                            "action": "Block"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "ruleGroupName": "GoodBots",
+                                    "rules": [
+                                        {
+                                            "ruleId": "200100",
+                                            "state": "Disabled",
+                                            "action": "Allow"
+                                        },
+                                        {
+                                            "ruleId": "200200",
+                                            "state": "Disabled",
+                                            "action": "Allow"
+                                        },
+                                        {
+                                            "ruleId": "200300",
+                                            "state": "Disabled",
+                                            "action": "Allow"
+                                        },
+                                        {
+                                            "ruleId": "200400",
+                                            "state": "Disabled",
+                                            "action": "Allow"
+                                        },
+                                        {
+                                            "ruleId": "200500",
+                                            "state": "Disabled",
+                                            "action": "Allow"
+                                        },
+                                        {
+                                            "ruleId": "200600",
+                                            "state": "Disabled",
+                                            "action": "Allow"
+                                        },
+                                        {
+                                            "ruleId": "200700",
+                                            "state": "Disabled",
+                                            "action": "Allow"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "ruleGroupName": "UnknownBots",
+                                    "rules": [
+                                        {
+                                            "ruleId": "300100",
+                                            "state": "Disabled",
+                                            "action": "Log"
+                                        },
+                                        {
+                                            "ruleId": "300200",
+                                            "state": "Disabled",
+                                            "action": "Log"
+                                        },
+                                        {
+                                            "ruleId": "300300",
+                                            "state": "Disabled",
+                                            "action": "Log"
+                                        },
+                                        {
+                                            "ruleId": "300400",
+                                            "state": "Disabled",
+                                            "action": "Log"
+                                        },
+                                        {
+                                            "ruleId": "300500",
+                                            "state": "Disabled",
+                                            "action": "Log"
+                                        },
+                                        {
+                                            "ruleId": "300600",
+                                            "state": "Disabled",
+                                            "action": "Log"
+                                        },
+                                        {
+                                            "ruleId": "300700",
+                                            "state": "Disabled",
+                                            "action": "Log"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "exclusions": [
+                        {
+                            "matchVariable": "RequestCookieNames",
+                            "selectorMatchOperator": "Equals",
+                            "selector": "sgconnect-l1",
+                            "exclusionManagedRuleSets": []
+                        },
+                        {
+                            "matchVariable": "RequestCookieNames",
+                            "selectorMatchOperator": "Equals",
+                            "selector": "sgconnect-l2",
+                            "exclusionManagedRuleSets": []
+                        },
+                        {
+                            "matchVariable": "RequestCookieNames",
+                            "selectorMatchOperator": "StartsWith",
+                            "selector": "_pk_cvar",
+                            "exclusionManagedRuleSets": []
+                        },
+                        {
+                            "matchVariable": "RequestCookieNames",
+                            "selectorMatchOperator": "StartsWith",
+                            "selector": "_pk_hsr",
+                            "exclusionManagedRuleSets": []
+                        },
+                        {
+                            "matchVariable": "RequestCookieNames",
+                            "selectorMatchOperator": "StartsWith",
+                            "selector": "_pk_id",
+                            "exclusionManagedRuleSets": []
+                        },
+                        {
+                            "matchVariable": "RequestCookieNames",
+                            "selectorMatchOperator": "StartsWith",
+                            "selector": "_pk_ref",
+                            "exclusionManagedRuleSets": []
+                        },
+                        {
+                            "matchVariable": "RequestCookieNames",
+                            "selectorMatchOperator": "StartsWith",
+                            "selector": "_pk_ses",
+                            "exclusionManagedRuleSets": []
+                        }
+                    ]
+                }
+            }
+        }
+    ]
 }
