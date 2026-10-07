@@ -1,98 +1,293 @@
-# Fichier : waf_smartbalancesheet_hml_sgmarkets.tf
-
-# ⚠️ BLOC IMPORT avec la souscription en dur et le RG en variable
-import {
-  to = azurerm_web_application_firewall_policy.smartbalancesheet_hml_sgmarkets_com
-  id = "/subscriptions/d12989f0-afeb-4232-bcca-9965b4570d87/resourceGroups/${var.rg_name}/providers/Microsoft.Network/applicationGatewayWebApplicationFirewallPolicies/smartbalancesheet-hml.sgmarkets.com"
-}
-
-resource "azurerm_web_application_firewall_policy" "smartbalancesheet_hml_sgmarkets_com" {
-  name                = "smartbalancesheet-hml.sgmarkets.com"
-  resource_group_name = var.rg_name
-  location            = var.location
-
-  policy_settings {
-    enabled                          = true
-    mode                             = "Prevention" # Repris de ton export
-    request_body_check               = true
-    max_request_body_size_in_kb      = 1024
-    file_upload_limit_in_mb          = 100
-    request_body_inspect_limit_in_kb = 1024
-  }
-
-  # ==========================================
-  # CUSTOM RULES (3 Règles)
-  # ==========================================
-  custom_rules {
-    name      = "AllowAPI"
-    priority  = 10
-    rule_type = "MatchRule"
-    action    = "Allow"
-    
-    match_conditions {
-      match_variables {
-        variable_name = "RequestUri"
-      }
-      operator     = "Contains"
-      match_values = [
-        "api/v",
-        "/api/p"
-      ]
-    }
-  }
-
-  custom_rules {
-    name      = "Allow"
-    priority  = 11
-    rule_type = "MatchRule"
-    action    = "Allow"
-    
-    match_conditions {
-      match_variables {
-        variable_name = "RequestUri"
-      }
-      operator     = "Contains"
-      match_values = [
-        "/graphql"
-      ]
-    }
-  }
-
-  custom_rules {
-    name      = "AllowToken"
-    priority  = 12
-    rule_type = "MatchRule"
-    action    = "Allow"
-    
-    match_conditions {
-      match_variables {
-        variable_name = "RequestUri"
-      }
-      operator     = "Contains"
-      match_values = [
-        "/one-authentication-client/",
-        "/auth/realms/bpcees/"
-      ]
-    }
-  }
-
-  # ==========================================
-  # MANAGED RULES (3 Moteurs par défaut)
-  # ==========================================
-  managed_rules {
-    managed_rule_set {
-      type    = "Microsoft_DefaultRuleSet"
-      version = "2.2"
-    }
-
-    managed_rule_set {
-      type    = "Microsoft_BotManagerRuleSet"
-      version = "1.1"
-    }
-
-    managed_rule_set {
-      type    = "Microsoft_HTTPDDoSRuleSet"
-      version = "1.0"
-    }
-  }
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "ApplicationGatewayWebApplicationFirewallPolicies_sgef_sgmarkets_com_name": {
+            "defaultValue": "sgef.sgmarkets.com",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies",
+            "apiVersion": "2025-07-01",
+            "name": "[parameters('ApplicationGatewayWebApplicationFirewallPolicies_sgef_sgmarkets_com_name')]",
+            "location": "northeurope",
+            "properties": {
+                "customRules": [
+                    {
+                        "name": "blockingsubnet",
+                        "priority": 1,
+                        "ruleType": "MatchRule",
+                        "action": "Block",
+                        "matchConditions": [
+                            {
+                                "matchVariables": [
+                                    {
+                                        "variableName": "RemoteAddr"
+                                    }
+                                ],
+                                "operator": "IPMatch",
+                                "negationConditon": false,
+                                "matchValues": [
+                                    "176.117.107.101",
+                                    "176.117.107.104",
+                                    "198.7.56.247",
+                                    "5.45.102.93",
+                                    "203.2.112.183",
+                                    "81.249.233.174",
+                                    "86.211.98.235",
+                                    "203.2.112.125",
+                                    "36.111.32.237",
+                                    "90.14.32.118",
+                                    "20.122.40.187"
+                                ],
+                                "transforms": []
+                            }
+                        ],
+                        "state": "Enabled"
+                    },
+                    {
+                        "name": "cve202555182",
+                        "priority": 2,
+                        "ruleType": "MatchRule",
+                        "action": "Block",
+                        "matchConditions": [
+                            {
+                                "matchVariables": [
+                                    {
+                                        "variableName": "PostArgs"
+                                    }
+                                ],
+                                "operator": "Contains",
+                                "negationConditon": false,
+                                "matchValues": [
+                                    "constructor",
+                                    "__proto__",
+                                    "prototype",
+                                    "_response"
+                                ],
+                                "transforms": [
+                                    "Lowercase",
+                                    "RemoveNulls",
+                                    "UrlDecode"
+                                ]
+                            },
+                            {
+                                "matchVariables": [
+                                    {
+                                        "variableName": "RequestHeaders",
+                                        "selector": "next-action"
+                                    }
+                                ],
+                                "operator": "Any",
+                                "negationConditon": false,
+                                "matchValues": [],
+                                "transforms": []
+                            }
+                        ],
+                        "state": "Enabled"
+                    },
+                    {
+                        "name": "cve202555182ver2",
+                        "priority": 3,
+                        "ruleType": "MatchRule",
+                        "action": "Block",
+                        "matchConditions": [
+                            {
+                                "matchVariables": [
+                                    {
+                                        "variableName": "PostArgs"
+                                    }
+                                ],
+                                "operator": "Contains",
+                                "negationConditon": false,
+                                "matchValues": [
+                                    "constructor",
+                                    "__proto__",
+                                    "prototype",
+                                    "_response"
+                                ],
+                                "transforms": [
+                                    "Lowercase",
+                                    "UrlDecode",
+                                    "RemoveNulls"
+                                ]
+                            },
+                            {
+                                "matchVariables": [
+                                    {
+                                        "variableName": "RequestHeaders",
+                                        "selector": "rsc-action-id"
+                                    }
+                                ],
+                                "operator": "Any",
+                                "negationConditon": false,
+                                "matchValues": [],
+                                "transforms": []
+                            }
+                        ],
+                        "state": "Enabled"
+                    },
+                    {
+                        "name": "AllowApiRoot",
+                        "priority": 10,
+                        "ruleType": "MatchRule",
+                        "action": "Allow",
+                        "matchConditions": [
+                            {
+                                "matchVariables": [
+                                    {
+                                        "variableName": "RequestUri"
+                                    }
+                                ],
+                                "operator": "Contains",
+                                "negationConditon": false,
+                                "matchValues": [
+                                    "/api/p",
+                                    "api/v"
+                                ],
+                                "transforms": []
+                            }
+                        ],
+                        "state": "Enabled"
+                    },
+                    {
+                        "name": "Allow",
+                        "priority": 11,
+                        "ruleType": "MatchRule",
+                        "action": "Allow",
+                        "matchConditions": [
+                            {
+                                "matchVariables": [
+                                    {
+                                        "variableName": "RequestUri"
+                                    }
+                                ],
+                                "operator": "Contains",
+                                "negationConditon": false,
+                                "matchValues": [
+                                    "/graphql"
+                                ],
+                                "transforms": []
+                            }
+                        ],
+                        "state": "Enabled"
+                    },
+                    {
+                        "name": "AllowToken",
+                        "priority": 12,
+                        "ruleType": "MatchRule",
+                        "action": "Allow",
+                        "matchConditions": [
+                            {
+                                "matchVariables": [
+                                    {
+                                        "variableName": "RequestUri"
+                                    }
+                                ],
+                                "operator": "Contains",
+                                "negationConditon": false,
+                                "matchValues": [
+                                    "/auth/realms/bpcees/",
+                                    "/one-authentication-client/"
+                                ],
+                                "transforms": []
+                            }
+                        ],
+                        "state": "Enabled"
+                    }
+                ],
+                "policySettings": {
+                    "requestBodyCheck": true,
+                    "maxRequestBodySizeInKb": 1024,
+                    "fileUploadLimitInMb": 100,
+                    "state": "Enabled",
+                    "mode": "Prevention",
+                    "requestBodyInspectLimitInKB": 1024,
+                    "fileUploadEnforcement": true,
+                    "requestBodyEnforcement": true
+                },
+                "managedRules": {
+                    "managedRuleSets": [
+                        {
+                            "ruleSetType": "OWASP",
+                            "ruleSetVersion": "3.2",
+                            "ruleGroupOverrides": [
+                                {
+                                    "ruleGroupName": "General",
+                                    "rules": [
+                                        {
+                                            "ruleId": "200004",
+                                            "state": "Disabled"
+                                        },
+                                        {
+                                            "ruleId": "200003",
+                                            "state": "Disabled"
+                                        },
+                                        {
+                                            "ruleId": "200002",
+                                            "state": "Enabled",
+                                            "action": "AnomalyScoring"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "exclusions": [
+                        {
+                            "matchVariable": "RequestCookieNames",
+                            "selectorMatchOperator": "Equals",
+                            "selector": "sgconnect-l1",
+                            "exclusionManagedRuleSets": []
+                        },
+                        {
+                            "matchVariable": "RequestCookieNames",
+                            "selectorMatchOperator": "Equals",
+                            "selector": "sgconnect-l1",
+                            "exclusionManagedRuleSets": []
+                        },
+                        {
+                            "matchVariable": "RequestCookieNames",
+                            "selectorMatchOperator": "StartsWith",
+                            "selector": "_pk_hsr",
+                            "exclusionManagedRuleSets": []
+                        },
+                        {
+                            "matchVariable": "RequestCookieNames",
+                            "selectorMatchOperator": "StartsWith",
+                            "selector": "_pk_cvar",
+                            "exclusionManagedRuleSets": []
+                        },
+                        {
+                            "matchVariable": "RequestCookieNames",
+                            "selectorMatchOperator": "StartsWith",
+                            "selector": "_pk_ses",
+                            "exclusionManagedRuleSets": []
+                        },
+                        {
+                            "matchVariable": "RequestCookieNames",
+                            "selectorMatchOperator": "StartsWith",
+                            "selector": "_pk_ref",
+                            "exclusionManagedRuleSets": []
+                        },
+                        {
+                            "matchVariable": "RequestCookieNames",
+                            "selectorMatchOperator": "StartsWith",
+                            "selector": "_pk_id",
+                            "exclusionManagedRuleSets": []
+                        },
+                        {
+                            "matchVariable": "RequestArgNames",
+                            "selectorMatchOperator": "Equals",
+                            "selector": "details",
+                            "exclusionManagedRuleSets": []
+                        }
+                    ]
+                }
+            }
+        }
+    ]
 }
