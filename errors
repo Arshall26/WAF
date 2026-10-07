@@ -1,71 +1,59 @@
-{
-    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-    "contentVersion": "1.0.0.0",
-    "parameters": {
-        "ApplicationGatewayWebApplicationFirewallPolicies_geo_gefa_a_de_name": {
-            "defaultValue": "geo.gefa-a.de",
-            "type": "String"
-        }
-    },
-    "variables": {},
-    "resources": [
-        {
-            "type": "Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies",
-            "apiVersion": "2025-07-01",
-            "name": "[parameters('ApplicationGatewayWebApplicationFirewallPolicies_geo_gefa_a_de_name')]",
-            "location": "germanywestcentral",
-            "properties": {
-                "customRules": [
-                    {
-                        "name": "AllowV2",
-                        "priority": 10,
-                        "ruleType": "MatchRule",
-                        "action": "Allow",
-                        "matchConditions": [
-                            {
-                                "matchVariables": [
-                                    {
-                                        "variableName": "RequestUri"
-                                    }
-                                ],
-                                "operator": "Contains",
-                                "negationConditon": false,
-                                "matchValues": [
-                                    "/v2"
-                                ],
-                                "transforms": []
-                            }
-                        ],
-                        "state": "Enabled"
-                    }
-                ],
-                "policySettings": {
-                    "requestBodyCheck": true,
-                    "maxRequestBodySizeInKb": 1024,
-                    "fileUploadLimitInMb": 100,
-                    "state": "Enabled",
-                    "mode": "Prevention",
-                    "jsChallengeCookieExpirationInMins": 30,
-                    "requestBodyInspectLimitInKB": 1024,
-                    "fileUploadEnforcement": true,
-                    "requestBodyEnforcement": true
-                },
-                "managedRules": {
-                    "managedRuleSets": [
-                        {
-                            "ruleSetType": "Microsoft_DefaultRuleSet",
-                            "ruleSetVersion": "2.1",
-                            "ruleGroupOverrides": []
-                        },
-                        {
-                            "ruleSetType": "Microsoft_BotManagerRuleSet",
-                            "ruleSetVersion": "1.0",
-                            "ruleGroupOverrides": []
-                        }
-                    ],
-                    "exclusions": []
-                }
-            }
-        }
-    ]
+# Fichier : waf_geo_gefa_a_de.tf
+
+# ⚠️ Le bloc de migration : empêche Terraform de détruire/recréer la policy
+moved {
+  from = azurerm_web_application_firewall_policy.waf_policies["geo.gefa-a.de"]
+  to   = azurerm_web_application_firewall_policy.geo_gefa_a_de
+}
+
+resource "azurerm_web_application_firewall_policy" "geo_gefa_a_de" {
+  name                = "geo.gefa-a.de"
+  resource_group_name = var.rg_name
+  location            = var.location
+
+  policy_settings {
+    enabled                          = true
+    mode                             = "Prevention" # Repris de ton export JSON
+    request_body_check               = true
+    max_request_body_size_in_kb      = 1024
+    file_upload_limit_in_mb          = 100
+    request_body_inspect_limit_in_kb = 1024
+  }
+
+  # ==========================================
+  # CUSTOM RULES (Issues du portail)
+  # ==========================================
+  custom_rules {
+    name      = "AllowV2"
+    priority  = 10
+    rule_type = "MatchRule"
+    action    = "Allow"
+    
+    match_conditions {
+      match_variables {
+        variable_name = "RequestUri"
+      }
+      operator     = "Contains"
+      match_values = [
+        "/v2"
+      ]
+    }
+  }
+
+  # ==========================================
+  # MANAGED RULES (Moteurs par défaut)
+  # ==========================================
+  managed_rules {
+    managed_rule_set {
+      type    = "Microsoft_DefaultRuleSet"
+      version = "2.1"
+      # Aucune exclusion OWASP sur cet environnement
+    }
+
+    managed_rule_set {
+      type    = "Microsoft_BotManagerRuleSet"
+      version = "1.0"
+      # Aucune règle Bot désactivée sur cet environnement
+    }
+  }
 }
