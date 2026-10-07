@@ -1,1 +1,105 @@
-d12989f0-afeb-4232-bcca-9965b4570d87
+# Fichier : waf_one_equipmentsolutions.tf
+
+# ⚠️ BLOC IMPORT avec la souscription en dur et le RG en variable
+import {
+  to = azurerm_web_application_firewall_policy.one_equipmentsolutions
+  id = "/subscriptions/d12989f0-afeb-4232-bcca-9965b4570d87/resourceGroups/${var.rg_name}/providers/Microsoft.Network/applicationGatewayWebApplicationFirewallPolicies/one.equipmentsolutions.groupebpce.com"
+}
+
+resource "azurerm_web_application_firewall_policy" "one_equipmentsolutions" {
+  name                = "one.equipmentsolutions.groupebpce.com"
+  resource_group_name = var.rg_name
+  location            = var.location
+
+  policy_settings {
+    enabled                          = true
+    mode                             = "Detection" # ⚠️ Repris de ton export JSON
+    request_body_check               = true
+    max_request_body_size_in_kb      = 1024
+    file_upload_limit_in_mb          = 100
+    request_body_inspect_limit_in_kb = 1024
+  }
+
+  # ==========================================
+  # CUSTOM RULES (3 Règles)
+  # ==========================================
+  custom_rules {
+    name      = "AllowApi"
+    priority  = 10
+    rule_type = "MatchRule"
+    action    = "Allow"
+    
+    match_conditions {
+      match_variables {
+        variable_name = "RequestUri"
+      }
+      operator     = "Contains"
+      match_values = [
+        "api/v",
+        "/api/p"
+      ]
+    }
+  }
+
+  custom_rules {
+    name      = "Allow"
+    priority  = 11
+    rule_type = "MatchRule"
+    action    = "Allow"
+    
+    match_conditions {
+      match_variables {
+        variable_name = "RequestUri"
+      }
+      operator     = "Contains"
+      match_values = [
+        "/graphql"
+      ]
+    }
+  }
+
+  custom_rules {
+    name      = "AllowToken"
+    priority  = 12
+    rule_type = "MatchRule"
+    action    = "Allow"
+    
+    match_conditions {
+      match_variables {
+        variable_name = "RequestUri"
+      }
+      operator     = "Contains"
+      match_values = [
+        "/one-authentication-client/",
+        "/auth/realms/bpcees/"
+      ]
+    }
+  }
+
+  # ==========================================
+  # MANAGED RULES (3 Moteurs + 1 Exclusion globale)
+  # ==========================================
+  managed_rules {
+    # Exclusion Globale
+    exclusion {
+      match_variable          = "RequestCookieValues"
+      selector_match_operator = "StartsWith"
+      selector                = "_pk_"
+    }
+
+    managed_rule_set {
+      type    = "Microsoft_DefaultRuleSet"
+      version = "2.2"
+    }
+
+    managed_rule_set {
+      type    = "Microsoft_BotManagerRuleSet"
+      version = "1.1"
+    }
+
+    managed_rule_set {
+      type    = "Microsoft_HTTPDDoSRuleSet"
+      version = "1.0"
+    }
+  }
+}
