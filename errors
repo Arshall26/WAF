@@ -1,16 +1,129 @@
-yavait un fichier variables.tf pour gefa est ce que je le reprends pour sgef ? j'ai d'ailleurs repris le meme main.tf
-
-variable "rg_name" {
-    description = "Target Resource Group name"
-    type = string
-}
-
-variable "waf_name" {
-    description = "Policy waf name"
-    type = string
-}
-
-variable "location" {
-    description = "Target Azure region"
-    type = string
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "ApplicationGatewayWebApplicationFirewallPolicies_one_equipmentsolutions_groupebpce_com_name": {
+            "defaultValue": "one.equipmentsolutions.groupebpce.com",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies",
+            "apiVersion": "2025-07-01",
+            "name": "[parameters('ApplicationGatewayWebApplicationFirewallPolicies_one_equipmentsolutions_groupebpce_com_name')]",
+            "location": "northeurope",
+            "properties": {
+                "customRules": [
+                    {
+                        "name": "AllowApi",
+                        "priority": 10,
+                        "ruleType": "MatchRule",
+                        "action": "Allow",
+                        "matchConditions": [
+                            {
+                                "matchVariables": [
+                                    {
+                                        "variableName": "RequestUri"
+                                    }
+                                ],
+                                "operator": "Contains",
+                                "negationConditon": false,
+                                "matchValues": [
+                                    "api/v",
+                                    "/api/p"
+                                ],
+                                "transforms": []
+                            }
+                        ],
+                        "state": "Enabled"
+                    },
+                    {
+                        "name": "Allow",
+                        "priority": 11,
+                        "ruleType": "MatchRule",
+                        "action": "Allow",
+                        "matchConditions": [
+                            {
+                                "matchVariables": [
+                                    {
+                                        "variableName": "RequestUri"
+                                    }
+                                ],
+                                "operator": "Contains",
+                                "negationConditon": false,
+                                "matchValues": [
+                                    "/graphql"
+                                ],
+                                "transforms": []
+                            }
+                        ],
+                        "state": "Enabled"
+                    },
+                    {
+                        "name": "AllowToken",
+                        "priority": 12,
+                        "ruleType": "MatchRule",
+                        "action": "Allow",
+                        "matchConditions": [
+                            {
+                                "matchVariables": [
+                                    {
+                                        "variableName": "RequestUri"
+                                    }
+                                ],
+                                "operator": "Contains",
+                                "negationConditon": false,
+                                "matchValues": [
+                                    "/one-authentication-client/",
+                                    "/auth/realms/bpcees/"
+                                ],
+                                "transforms": []
+                            }
+                        ],
+                        "state": "Enabled"
+                    }
+                ],
+                "policySettings": {
+                    "requestBodyCheck": true,
+                    "maxRequestBodySizeInKb": 1024,
+                    "fileUploadLimitInMb": 100,
+                    "state": "Enabled",
+                    "mode": "Detection",
+                    "jsChallengeCookieExpirationInMins": 30,
+                    "requestBodyInspectLimitInKB": 1024,
+                    "fileUploadEnforcement": true,
+                    "requestBodyEnforcement": true
+                },
+                "managedRules": {
+                    "managedRuleSets": [
+                        {
+                            "ruleSetType": "Microsoft_DefaultRuleSet",
+                            "ruleSetVersion": "2.2",
+                            "ruleGroupOverrides": []
+                        },
+                        {
+                            "ruleSetType": "Microsoft_BotManagerRuleSet",
+                            "ruleSetVersion": "1.1",
+                            "ruleGroupOverrides": []
+                        },
+                        {
+                            "ruleSetType": "Microsoft_HTTPDDoSRuleSet",
+                            "ruleSetVersion": "1.0",
+                            "ruleGroupOverrides": []
+                        }
+                    ],
+                    "exclusions": [
+                        {
+                            "matchVariable": "RequestCookieValues",
+                            "selectorMatchOperator": "StartsWith",
+                            "selector": "_pk_",
+                            "exclusionManagedRuleSets": []
+                        }
+                    ]
+                }
+            }
+        }
+    ]
 }
