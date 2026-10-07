@@ -1,44 +1,48 @@
-# Fichier : waf_my_gefa_bank_a_de.tf
-
-# ⚠️ Le bloc de migration : empêche Terraform de détruire/recréer la policy
-moved {
-  from = azurerm_web_application_firewall_policy.waf_policies["my.gefa-bank-a.de"]
-  to   = azurerm_web_application_firewall_policy.my_gefa_bank_a_de
-}
-
-resource "azurerm_web_application_firewall_policy" "my_gefa_bank_a_de" {
-  name                = "my.gefa-bank-a.de"
-  resource_group_name = var.rg_name
-  location            = var.location
-
-  policy_settings {
-    enabled                          = true
-    mode                             = "Prevention" # Repris de ton export JSON
-    request_body_check               = true
-    max_request_body_size_in_kb      = 1024
-    file_upload_limit_in_mb          = 100
-    request_body_inspect_limit_in_kb = 1024
-  }
-
-  # ==========================================
-  # CUSTOM RULES
-  # ==========================================
-  # Aucune Custom Rule présente dans l'export JSON
-
-  # ==========================================
-  # MANAGED RULES (Moteurs par défaut)
-  # ==========================================
-  managed_rules {
-    managed_rule_set {
-      type    = "Microsoft_DefaultRuleSet"
-      version = "2.1"
-      # Aucune exclusion OWASP sur cet environnement
-    }
-
-    managed_rule_set {
-      type    = "Microsoft_BotManagerRuleSet"
-      version = "1.0"
-      # Aucune règle Bot désactivée sur cet environnement
-    }
-  }
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "ApplicationGatewayWebApplicationFirewallPolicies_redmine_gefa_a_de_name": {
+            "defaultValue": "redmine.gefa-a.de",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies",
+            "apiVersion": "2025-07-01",
+            "name": "[parameters('ApplicationGatewayWebApplicationFirewallPolicies_redmine_gefa_a_de_name')]",
+            "location": "germanywestcentral",
+            "properties": {
+                "customRules": [],
+                "policySettings": {
+                    "requestBodyCheck": true,
+                    "maxRequestBodySizeInKb": 1024,
+                    "fileUploadLimitInMb": 100,
+                    "state": "Enabled",
+                    "mode": "Prevention",
+                    "jsChallengeCookieExpirationInMins": 30,
+                    "requestBodyInspectLimitInKB": 1024,
+                    "fileUploadEnforcement": true,
+                    "requestBodyEnforcement": true
+                },
+                "managedRules": {
+                    "managedRuleSets": [
+                        {
+                            "ruleSetType": "Microsoft_DefaultRuleSet",
+                            "ruleSetVersion": "2.1",
+                            "ruleGroupOverrides": []
+                        },
+                        {
+                            "ruleSetType": "Microsoft_BotManagerRuleSet",
+                            "ruleSetVersion": "1.0",
+                            "ruleGroupOverrides": []
+                        }
+                    ],
+                    "exclusions": []
+                }
+            }
+        }
+    ]
 }
