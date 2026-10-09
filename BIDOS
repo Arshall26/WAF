@@ -1,70 +1,67 @@
-2. Prerequisites & Security Setup (Azure Automation)
+3. Integration: Automating the Failover (The Runbook)
 
-To automate the disk SKU conversion without storing credentials, we utilize an Azure Automation Account leveraging a System Assigned Managed Identity.
+With the security perimeter established, the next phase is to deploy the FinOps logic and integrate it directly into the disaster recovery sequence. The runbook must be configured to execute strictly as a Post-action, ensuring the Azure VMs are physically provisioned in the target region before the script attempts to modify their disks.
 
-Critical Architectural Rule: The Automation Account must be deployed in the exact same Subscription as the ASR Recovery Services Vault, and physically located in the DR Region (e.g., West Europe). If not, ASR will not natively see the runbook.
+3.1. Importing and Publishing the Runbook
 
-2.1. Deploying the Automation Account
+In the Azure Portal, navigate to the Automation Account you created in the previous step.
 
-In the Azure Portal search bar, type Automation Accounts and select the service.
+In the left-hand menu, under Process Automation, click on Runbooks.
 
-Click + Create and fill in the Basics tab:
+Click + Create a runbook at the top.
 
-Subscription: Must match your ASR Recovery Services Vault subscription.
+Name: ASR-SmartTiering-PremiumUpgrade
 
-Resource Group: Create a dedicated RG (e.g., rg-asr-automation-we).
+Runbook type: PowerShell
 
-Region: West Europe (or your designated DR target region).
+Runtime version: 5.1 (or 7.1/7.2 depending on your standard)
 
-[Screen: "Basics" tab of the Automation Account creation, highlighting the Subscription, Region, and Resource Group fields]
+[Screen: The "Create a runbook" pane showing the Name and Runbook type (PowerShell) fields filled out]
 
-Click Next: Advanced.
+Click Create. You will be redirected to the PowerShell editor.
 
-Under Identity, ensure System assigned is checked (ON). This is mandatory for secure authentication.
+Paste the validated FinOps Smart Tiering PowerShell script into the editor pane.
 
-[Screen: "Advanced" tab showing the "System assigned" toggle set to ON]
+Click Save at the top left, and then—critically—click Publish.
 
-Click Next: Networking.
+Note: ASR Recovery Plans cannot see or execute runbooks that are left in "Edit" or "Draft" mode.
 
-Select Public access (required for the runbook to reach the Azure Resource Manager API, unless SCOR network policies mandate Private Endpoints).
+[Screen: The Runbook editor showing the script pasted inside, with a red box highlighting the "Publish" button at the top]
 
-Click Review + Create, then Create.
+3.2. Integrating the Runbook into the ASR Recovery Plan
 
-2.2. Configuring RBAC (Role-Based Access Control)
-The newly created Managed Identity needs the authority to power off VMs and change disk SKUs specifically within the DR target environment.
+Navigate to your Recovery Services Vault (where the ASR replication is managed).
 
-Navigate to your Target DR Resource Group (the resource group where the ASR failover VMs and passive replica disks reside, e.g., AEnPocRg-FinOps-asr).
+In the left menu, under Manage, click on Recovery Plans (Site Recovery).
 
-In the left-hand menu, select Access control (IAM).
+[Screen: The left menu of the Recovery Services Vault with a red box around "Recovery Plans (Site Recovery)"]
 
-[Screen: The target Resource Group menu, with a red box around "Access control (IAM)"]
+Click on the target Recovery Plan for the application (e.g., RP-ANTARES).
 
-Click + Add > Add role assignment.
+At the top of the Recovery Plan overview, click Customize.
 
-[Screen: Dropdown menu showing "Add role assignment"]
+[Screen: The Recovery Plan overview page with the "Customize" button highlighted at the top]
 
-In the Role tab, search for and select Virtual Machine Contributor. Click Next.
+Locate the VM startup group, typically Group 1: Start.
 
-[Screen: Role search bar with "Virtual Machine Contributor" typed and selected]
+Click the ... (ellipsis) on the right side of the Group 1: Start row and select Add post action.
 
-In the Members tab:
+Warning: Never add this as a Pre-action. The script relies on the "Time Created" attribute of the newly spawned disks, which do not exist until the Post-action phase.
 
-Choose Assign access to: Managed identity.
+[Screen: The customization view showing the expanded Group 1, highlighting the "... > Add post action" dropdown menu]
 
-Click + Select members.
+In the Insert action blade that opens on the right, fill in the following:
 
-In the side panel, select your subscription, choose Automation Account from the Managed identity dropdown, and click on the Automation Account you just created.
+Action to perform: Script
 
-[Screen: The right-side panel showing the specific Automation Account selected under Managed identities]
+Name: FinOps-UpgradeDisks-Premium
 
-Click Review + assign.
+Automation account: Select the automation account created in Section 2.
 
-2.3. Verifying Access
+Runbook name: Select ASR-SmartTiering-PremiumUpgrade.
 
-To ensure the rights propagated correctly, stay on the Access control (IAM) page of the Target Resource Group.
+[Screen: The "Insert action" blade fully populated with the Automation account and Runbook details]
 
-Click the Role assignments tab.
+Click OK to close the blade.
 
-Scroll to Virtual Machine Contributor and verify your Automation Account is listed.
-
-[Screen: The IAM Role assignments list showing the Automation Account successfully listed under the Virtual Machine Contributor section]
+Click Save at the top of the Customize page to commit the new architecture.
