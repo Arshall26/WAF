@@ -1,67 +1,48 @@
-3. Integration: Automating the Failover (The Runbook)
+4. Operations: Retrofitting Existing ASR Replicas
 
-With the security perimeter established, the next phase is to deploy the FinOps logic and integrate it directly into the disaster recovery sequence. The runbook must be configured to execute strictly as a Post-action, ensuring the Azure VMs are physically provisioned in the target region before the script attempts to modify their disks.
+To immediately realize the FinOps savings on existing protected VMs, the passive Premium SSD replica disks must be downgraded to Standard HDD. Because Azure Site Recovery maintains a continuous Shared Access Signature (SAS) lock on these disks to write replication data, the disk SKU cannot be modified directly.
 
-3.1. Importing and Publishing the Runbook
+The following procedure safely removes the lock, changes the tier, and allows ASR to automatically self-heal and resume replication.
 
-In the Azure Portal, navigate to the Automation Account you created in the previous step.
+4.1. The Direct Method (Cancel Export)
 
-In the left-hand menu, under Process Automation, click on Runbooks.
+In the Azure Portal, navigate to the Target DR Resource Group and select the passive replica disk resource.
 
-Click + Create a runbook at the top.
+In the left-hand menu, under Settings, select Disk Export.
 
-Name: ASR-SmartTiering-PremiumUpgrade
+Click the Cancel export button.
 
-Runbook type: PowerShell
+Mechanism: This destroys the active SAS token, instantly unlocking the disk for modifications.
 
-Runtime version: 5.1 (or 7.1/7.2 depending on your standard)
+[Screen: The Disk Export page with a red box highlighting the "Cancel export" button]
 
-[Screen: The "Create a runbook" pane showing the Name and Runbook type (PowerShell) fields filled out]
+Wait 1 to 2 minutes, then strictly refresh the browser (Ctrl + F5).
 
-Click Create. You will be redirected to the PowerShell editor.
+On the disk's Overview page, verify that the Disk state has changed from Active SAS to Unattached.
 
-Paste the validated FinOps Smart Tiering PowerShell script into the editor pane.
+[Screen: The disk Overview page highlighting the "Disk state" field reading "Unattached"]
 
-Click Save at the top left, and then—critically—click Publish.
+In the left-hand menu, select Size + performance.
 
-Note: ASR Recovery Plans cannot see or execute runbooks that are left in "Edit" or "Draft" mode.
+Change the storage SKU from Premium SSD to Standard HDD, then click Save.
 
-[Screen: The Runbook editor showing the script pasted inside, with a red box highlighting the "Publish" button at the top]
+[Screen: The "Size + performance" blade showing Standard HDD selected and the Save button highlighted]
 
-3.2. Integrating the Runbook into the ASR Recovery Plan
+Auto-Recovery: No further action is required. Within 15 to 30 minutes, ASR will automatically detect the missing lock, request a new SAS token, and resume delta replication. (Temporary Warning or Critical states in the Recovery Vault during this window are expected and normal).
 
-Navigate to your Recovery Services Vault (where the ASR replication is managed).
+4.2. The Fallback Method (Pause Replication)
+If ASR's aggressive background processes immediately recreate the SAS lock before you can save the new SKU, use this fallback method to temporarily halt the replication engine.
 
-In the left menu, under Manage, click on Recovery Plans (Site Recovery).
+Navigate to the Recovery Services Vault, go to Replicated items, and select the target VM.
 
-[Screen: The left menu of the Recovery Services Vault with a red box around "Recovery Plans (Site Recovery)"]
+At the top of the overview page, click Pause Replication.
 
-Click on the target Recovery Plan for the application (e.g., RP-ANTARES).
+[Screen: The Replicated item overview page with a red box around the "Pause Replication" button]
 
-At the top of the Recovery Plan overview, click Customize.
+Return to the replica disk resource. If it is not already unlocked, repeat the "Cancel export" step above.
 
-[Screen: The Recovery Plan overview page with the "Customize" button highlighted at the top]
+Navigate to Size + performance and change the SKU to Standard HDD.
 
-Locate the VM startup group, typically Group 1: Start.
+Return to the Replicated item in the Recovery Services Vault and click Resume Replication.
 
-Click the ... (ellipsis) on the right side of the Group 1: Start row and select Add post action.
-
-Warning: Never add this as a Pre-action. The script relies on the "Time Created" attribute of the newly spawned disks, which do not exist until the Post-action phase.
-
-[Screen: The customization view showing the expanded Group 1, highlighting the "... > Add post action" dropdown menu]
-
-In the Insert action blade that opens on the right, fill in the following:
-
-Action to perform: Script
-
-Name: FinOps-UpgradeDisks-Premium
-
-Automation account: Select the automation account created in Section 2.
-
-Runbook name: Select ASR-SmartTiering-PremiumUpgrade.
-
-[Screen: The "Insert action" blade fully populated with the Automation account and Runbook details]
-
-Click OK to close the blade.
-
-Click Save at the top of the Customize page to commit the new architecture.
+[Screen: The Replicated item overview page showing the "Resume Replication" button]
