@@ -1,2 +1,70 @@
-SCOR’s Azure Site Recovery (ASR) architecture strictly mirrors production by provisioning high-cost Premium SSDs for passive replica disks. To eliminate this dormant capacity waste, the ASR Smart Tiering initiative decouples the target storage by utilizing cost-effective Standard HDDs for background replication. Upon triggering a Disaster Recovery (DR) event, an automated runbook seamlessly upgrades the target disks back to Premium SSD before the application boots. This optimization unlocks significant infrastructure savings while guaranteeing zero impact on active production workloads, application performance, or RPO/RTO SLAs.
-This Standard Operating Procedure (SOP) provides the step-by-step guidelines for the Production team to retrofit existing ASR environments, deploy the automation, and safely execute DR failovers.
+2. Prerequisites & Security Setup (Azure Automation)
+
+To automate the disk SKU conversion without storing credentials, we utilize an Azure Automation Account leveraging a System Assigned Managed Identity.
+
+Critical Architectural Rule: The Automation Account must be deployed in the exact same Subscription as the ASR Recovery Services Vault, and physically located in the DR Region (e.g., West Europe). If not, ASR will not natively see the runbook.
+
+2.1. Deploying the Automation Account
+
+In the Azure Portal search bar, type Automation Accounts and select the service.
+
+Click + Create and fill in the Basics tab:
+
+Subscription: Must match your ASR Recovery Services Vault subscription.
+
+Resource Group: Create a dedicated RG (e.g., rg-asr-automation-we).
+
+Region: West Europe (or your designated DR target region).
+
+[Screen: "Basics" tab of the Automation Account creation, highlighting the Subscription, Region, and Resource Group fields]
+
+Click Next: Advanced.
+
+Under Identity, ensure System assigned is checked (ON). This is mandatory for secure authentication.
+
+[Screen: "Advanced" tab showing the "System assigned" toggle set to ON]
+
+Click Next: Networking.
+
+Select Public access (required for the runbook to reach the Azure Resource Manager API, unless SCOR network policies mandate Private Endpoints).
+
+Click Review + Create, then Create.
+
+2.2. Configuring RBAC (Role-Based Access Control)
+The newly created Managed Identity needs the authority to power off VMs and change disk SKUs specifically within the DR target environment.
+
+Navigate to your Target DR Resource Group (the resource group where the ASR failover VMs and passive replica disks reside, e.g., AEnPocRg-FinOps-asr).
+
+In the left-hand menu, select Access control (IAM).
+
+[Screen: The target Resource Group menu, with a red box around "Access control (IAM)"]
+
+Click + Add > Add role assignment.
+
+[Screen: Dropdown menu showing "Add role assignment"]
+
+In the Role tab, search for and select Virtual Machine Contributor. Click Next.
+
+[Screen: Role search bar with "Virtual Machine Contributor" typed and selected]
+
+In the Members tab:
+
+Choose Assign access to: Managed identity.
+
+Click + Select members.
+
+In the side panel, select your subscription, choose Automation Account from the Managed identity dropdown, and click on the Automation Account you just created.
+
+[Screen: The right-side panel showing the specific Automation Account selected under Managed identities]
+
+Click Review + assign.
+
+2.3. Verifying Access
+
+To ensure the rights propagated correctly, stay on the Access control (IAM) page of the Target Resource Group.
+
+Click the Role assignments tab.
+
+Scroll to Virtual Machine Contributor and verify your Automation Account is listed.
+
+[Screen: The IAM Role assignments list showing the Automation Account successfully listed under the Virtual Machine Contributor section]
