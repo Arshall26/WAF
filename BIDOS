@@ -1,18 +1,40 @@
-# Fichier: main.tf (Version nettoyée)
+Document Structure: ASR Smart Tiering Standard Operating Procedure
+1. Executive Summary & Architecture Overview
 
-terraform {
-  required_version = ">= 1.1.0" # Le bloc 'moved' nécessite TF 1.1+
-  
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.0" # Ou la version que tu utilises
-    }
-  }
-}
+Concept: What ASR Smart Tiering is (decoupling target storage from production storage).
 
-provider "azurerm" {
-  features {}
-}
+Business Value: Financial impact and elimination of dormant provisioned capacity waste.
 
-# (Tes autres ressources communes comme les variables ou les data sources rg_name restent ici)
+Safety Guarantee: Why this has zero impact on active production workloads and RPO/RTO.
+
+2. Prerequisites & Security Setup
+
+Automation Account: Location requirements (Target DR Region / Same Subscription as Recovery Vault).
+
+RBAC / Permissions: Setup of the System Assigned Managed Identity and the Virtual Machine Contributor role assignment on the target Resource Group.
+
+3. Integration: Automating the Failover (The Runbook)
+
+Script Deployment: Importing the PowerShell runbook.
+
+Recovery Plan Configuration: Adding the script to the Group 1: Post-steps phase to ensure VMs are powered off, upgraded to Premium SSD, and rebooted during a DR event.
+
+4. Operations: Retrofitting Existing ASR Replicas
+
+This will detail the exact click-ops process for the Prod team to downgrade current disks.
+
+Method: Navigating to the Recovery Vault > Target VM > Re-configuring replication settings (or canceling the SAS export lock) to switch the passive disks from Premium SSD to Standard HDD.
+
+5. Operations: Executing a DR Test & Validation
+
+Initiating the Drill: Running a Test Failover.
+
+Expected Behavior: The cold boot phenomenon, application cache hydration, and total time to execution.
+
+Validation: How the Prod team verifies the disks successfully upgraded to Premium SSD in the target region.
+
+6. Operations: Cleanup & Failback
+
+Test Cleanup: Purging the DR environment post-test.
+
+Re-securing Storage: Ensuring the replication resumes smoothly on Standard HDDs.
