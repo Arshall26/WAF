@@ -1,42 +1,17 @@
-To realize the FinOps savings on existing protected VMs, the replication architecture must be reconfigured to target Standard HDD storage. Due to strict Shared Access Signature (SAS) locks maintained by Azure Site Recovery, the most reliable method to change the target disk SKU is to cleanly disable the current replication and re-protect the VM with the optimized FinOps storage settings.
+VOICI LE BLOC ACTUEL, redonne le moi entier et correct :
+  # ==========================================
+  # MANAGED RULES (Moteurs par défaut)
+  # ==========================================
+  managed_rules {
+    managed_rule_set {
+      type    = "Microsoft_DefaultRuleSet"
+      version = "2.1"
+      # Aucune exclusion OWASP sur cet environnement
+    }
 
-4.1. Disabling Current Replication & Cleanup
-Warning: This action temporarily removes DR protection for the VM while the new replication is being configured.
-
-In the Azure Portal, navigate to your Recovery Services Vault.
-
-In the left-hand menu under Protected items, click on Replicated items.
-
-Select the target VM currently running on Premium SSD replicas.
-
-At the top of the VM's overview page, click Disable Replication.
-
-[Screen: The Replicated item overview page with a red box highlighting the "Disable Replication" button]
-
-In the confirmation pane, provide a reason (e.g., "FinOps storage optimization") and confirm.
-
-Critical FinOps Cleanup: Disabling replication does not automatically delete the old replica disks. You must manually navigate to the Target DR Resource Group (e.g., AEnPocRg-FinOps-asr) and delete the orphaned Premium SSD replica disks to immediately stop the billing.
-
-[Screen: The Target Resource Group showing the orphaned Premium SSDs selected, highlighting the "Delete" button]
-
-4.2. Re-enabling Replication with Smart Tiering Settings
-
-Navigate directly to the source VM (in your primary production region) via the standard Virtual Machines blade.
-
-In the left-hand menu, under Operations (or Business continuity), select Disaster recovery.
-
-Click Enable replication.
-
-[Screen: The source VM Disaster Recovery page with the "Enable replication" button highlighted]
-
-Proceed through the Basics and Advanced tabs until you reach the Target settings (or Storage) configuration step.
-
-The FinOps Step: Locate the storage configuration section mapping the source disks to the target disks. Click on the target disk settings and explicitly change the Replica disk type from Premium SSD to Standard HDD.
-
-[Screen: The ASR Enable Replication wizard showing the storage mapping, with a red box highlighting the "Standard HDD" selection for the replica disk]
-
-Ensure the target Resource Group matches your designated DR environment (where the Automation Account has Contributor rights).
-
-Review the settings and click Enable replication.
-
-Expected Behavior: ASR will perform a full initial synchronization to the new Standard HDD disks. Once the status returns to "Protected/Healthy", the VM is ready for the FinOps automated failover.
+    managed_rule_set {
+      type    = "Microsoft_BotManagerRuleSet"
+      version = "1.0"
+      # Aucune règle Bot désactivée sur cet environnement
+    }
+  }
