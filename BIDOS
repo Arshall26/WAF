@@ -1,12 +1,47 @@
-VOICI LE BLOC ACTUEL, redonne le moi entier et correct :
-  # ==========================================
-  # MANAGED RULES (Moteurs par défaut)
+# ==========================================
+  # MANAGED RULES (Moteurs par défaut + Exceptions Redmine)
   # ==========================================
   managed_rules {
     managed_rule_set {
       type    = "Microsoft_DefaultRuleSet"
       version = "2.1"
-      # Aucune exclusion OWASP sur cet environnement
+
+      # --- Exceptions pour l'application Redmine ---
+
+      # Désactivation Protocol Enforcement
+      rule_group_override {
+        rule_group_name = "REQUEST-920-PROTOCOL-ENFORCEMENT"
+        rule {
+          id      = "920420"
+          enabled = false
+        }
+      }
+
+      # Désactivation Faux Positifs RCE (Code dans les tickets)
+      rule_group_override {
+        rule_group_name = "REQUEST-932-APPLICATION-ATTACK-RCE"
+        rule {
+          id      = "932100"
+          enabled = false
+        }
+        rule {
+          id      = "932115"
+          enabled = false
+        }
+        rule {
+          id      = "932160"
+          enabled = false
+        }
+      }
+
+      # Désactivation Faux Positifs SQLi (Apostrophes/Code SQL dans les tickets)
+      rule_group_override {
+        rule_group_name = "REQUEST-942-APPLICATION-ATTACK-SQLI"
+        rule {
+          id      = "942430"
+          enabled = false
+        }
+      }
     }
 
     managed_rule_set {
