@@ -1,58 +1,3 @@
-Error: creating Application Gateway Web Application Firewall Policy (Subscription: "dcffba59-38ca-4dd5-9360-c05ab1fb7b61" Resource Group Name: "azr-rg-bit-gefa-sas-in-prd" Application Gateway Web Application Firewall Policy Name: "git.gefa.de"): unexpected status 400 (400 Bad Request) with error: ApplicationGatewayFirewallUnknownRuleGroup: RuleGroup 'REQUEST-920-PROTOCOL-ENFORCEMENT' cannot be configured since it does not exist for Application Gateway Firewall in context ''.
-with azurerm_web_application_firewall_policy.git_gefa_de
-on waf_git_gefa_de.tf line 9, in resource "azurerm_web_application_firewall_policy" "git_gefa_de":
-resource "azurerm_web_application_firewall_policy" "git_gefa_de" {
-
-
-j'ai ca le fichier : 
-
-# Fichier : waf_git_gefa_de.tf
-
-# ⚠️ Le bloc de migration : empêche Terraform de détruire/recréer la policy
-moved {
-  from = azurerm_web_application_firewall_policy.waf_policies["git.gefa.de"]
-  to   = azurerm_web_application_firewall_policy.git_gefa_de
-}
-
-resource "azurerm_web_application_firewall_policy" "git_gefa_de" {
-  name                = "git.gefa.de"
-  resource_group_name = var.rg_name
-  location            = var.location
-
-  policy_settings {
-    enabled                          = true
-    mode                             = "Prevention" # Repris de ton export JSON
-    request_body_check               = true
-    max_request_body_size_in_kb      = 1024
-    file_upload_limit_in_mb          = 100
-    request_body_inspect_limit_in_kb = 1024
-  }
-
-  # ==========================================
-  # CUSTOM RULES (Issues du portail)
-  # ==========================================
-  custom_rules {
-    name      = "AllowDocker"
-    priority  = 10
-    rule_type = "MatchRule"
-    action    = "Allow"
-    
-    match_conditions {
-      match_variables {
-        variable_name = "RequestUri"
-      }
-      operator     = "Contains"
-      match_values = [
-        "/docker-base-images",
-        "/internal-java",
-        "/data-management",
-        "/backoffice",
-        "/graphql",
-        "/asset"
-      ]
-    }
-  }
-
   # ==========================================
   # MANAGED RULES (Moteurs par défaut + Exceptions Redmine)
   # ==========================================
@@ -62,10 +7,9 @@ resource "azurerm_web_application_firewall_policy" "git_gefa_de" {
       version = "2.1"
 
       # --- Exceptions pour l'application Redmine ---
-
       # Désactivation Protocol Enforcement
       rule_group_override {
-        rule_group_name = "REQUEST-920-PROTOCOL-ENFORCEMENT"
+        rule_group_name = "Protocol-Enforcement"
         rule {
           id      = "920420"
           enabled = false
@@ -74,7 +18,7 @@ resource "azurerm_web_application_firewall_policy" "git_gefa_de" {
 
       # Désactivation Faux Positifs RCE (Code dans les tickets)
       rule_group_override {
-        rule_group_name = "REQUEST-932-APPLICATION-ATTACK-RCE"
+        rule_group_name = "Web-Attack-RCE"
         rule {
           id      = "932100"
           enabled = false
@@ -91,7 +35,7 @@ resource "azurerm_web_application_firewall_policy" "git_gefa_de" {
 
       # Désactivation Faux Positifs SQLi (Apostrophes/Code SQL dans les tickets)
       rule_group_override {
-        rule_group_name = "REQUEST-942-APPLICATION-ATTACK-SQLI"
+        rule_group_name = "Web-Attack-SQLI"
         rule {
           id      = "942430"
           enabled = false
@@ -105,4 +49,3 @@ resource "azurerm_web_application_firewall_policy" "git_gefa_de" {
       # Aucune règle Bot désactivée sur cet environnement
     }
   }
-}
