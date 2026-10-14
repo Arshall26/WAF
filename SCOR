@@ -1,27 +1,155 @@
-La c'est mieux mais les csv ne sont pas generé !
+param(
+    [string]$NamePattern = 'PRD',
 
-PS /home/el> ./collect-prd-metrics_V2.ps1
-==== Subscription : SCOR-Gold-Prd-Core (dd640247-c8a0-4d39-9444-bb13c6f3c417) ====
-VMs trouvées (pattern 'PRD') : 672
-Extraction des métriques pour la VM : AUe2PrdAksJump-DMZCore...
-WARNING: Impossible de traiter la subscription dd640247-c8a0-4d39-9444-bb13c6f3c417 : A parameter cannot be found that matches parameter name 'ResourceId$vm'.
-==== Subscription : SCOR-Gold-Prd-CRO (7d9c4572-aacb-4974-b90c-9cb43c1579f9) ====
-VMs trouvées (pattern 'PRD') : 24
-Extraction des métriques pour la VM : AEnPrdCROGrafana...
-WARNING: Impossible de traiter la subscription 7d9c4572-aacb-4974-b90c-9cb43c1579f9 : A parameter cannot be found that matches parameter name 'ResourceId$vm'.
-==== Subscription : SCOR-Gold-Prd-SGI (75d2b152-7638-4cff-a4cf-5c86eaef3e89) ====
-VMs trouvées (pattern 'PRD') : 23
-Extraction des métriques pour la VM : AEnPrdCCI...
-WARNING: Impossible de traiter la subscription 75d2b152-7638-4cff-a4cf-5c86eaef3e89 : A parameter cannot be found that matches parameter name 'ResourceId$vm'.
-==== Subscription : SCOR-Gold-Prd-SGL (4a898a92-83ea-4b19-82bd-ce6673d35900) ====
-VMs trouvées (pattern 'PRD') : 47
-Extraction des métriques pour la VM : AUe2PrdActEaDb...
-WARNING: Impossible de traiter la subscription 4a898a92-83ea-4b19-82bd-ce6673d35900 : A parameter cannot be found that matches parameter name 'ResourceId$vm'.
-==== Subscription : SOLEM-Prod (327d24cf-e658-41c1-9af9-318687756ba4) ====
-VMs trouvées (pattern 'PRD') : 17
-Extraction des métriques pour la VM : AEnPrdSolemscan...
-WARNING: Impossible de traiter la subscription 327d24cf-e658-41c1-9af9-318687756ba4 : A parameter cannot be found that matches parameter name 'ResourceId$vm'.
-WARNING: Aucune donnée récupérée, les fichiers CSV n'ont pas été générés.
-Terminé !
-CSV (;) : ./PRD_VM_Metrics_AllSubs_semicolon.csv
-CSV (,) : ./PRD_VM_Metrics_AllSubs_comma.csv
+    [string[]]$SubscriptionIds = @(
+        "dd640247-c8a0-4d39-9444-bb13c6f3c417",
+        "7d9c4572-aacb-4974-b90c-9cb43c1579f9",
+        "75d2b152-7638-4cff-a4cf-5c86eaef3e89",
+        "4a898a92-83ea-4b19-82bd-ce6673d35900",
+        "327d24cf-e658-41c1-9af9-318687756ba4"
+    ),
+
+    [string]$MetricNamespace = "Microsoft.Compute/virtualMachines",
+    [string]$CsvSemicolonPath = "./PRD_VM_Metrics_AllSubs_semicolon.csv",
+    [string]$CsvCommaPath     = "./PRD_VM_Metrics_AllSubs_comma.csv"
+)
+
+$endDate  = Get-Date
+$start24h = $endDate.AddDays(-1)
+$start48h = $endDate.AddDays(-2)
+$start7d  = $endDate.AddDays(-7)
+
+function Get-TimeGrain([datetime]$start, [datetime]$end) {
+    $days = ($end - $start).TotalDays
+    if ($days -gt 2) {
+        return [TimeSpan]::FromHours(1)
+    }
+    return [TimeSpan]::FromMinutes(5)
+}
+
+function Get-AvgMetricTotalMBps {
+    param(
+        [string]$ResourceId,
+        [string]$MetricName,
+        [datetime]$StartTime,
+        [datetime]$EndTime,
+        [string]$MetricNamespace
+    )
+
+    $tg = Get-TimeGrain -start $StartTime -end $EndTime
+    $m = $null
+
+    try {
+        if ($MetricNamespace -and ($MetricNamespace.Trim().Length -gt 0)) {
+            $m = Get-AzMetric -ResourceId $ResourceId -MetricName $MetricName -AggregationType Average -StartTime $StartTime -EndTime $EndTime -TimeGrain $tg -MetricNamespace $MetricNamespace -DetailedOutput -WarningAction SilentlyContinue -ErrorAction Stop
+        } else {
+            throw "MetricNamespace vide"
+        }
+    }
+    catch {
+        try {
+            $m = Get-AzMetric -ResourceId $ResourceId -MetricName $MetricName -AggregationType Average -StartTime $StartTime -EndTime $EndTime -TimeGrain $tg -DetailedOutput -WarningAction SilentlyContinue -ErrorAction Stop
+        }
+        catch {
+            Write-Warning "Metrique indisponible ($MetricName) sur $ResourceId : $($_.Exception.Message)"
+            return 0
+        }
+    }
+
+    if ((-not $m) -or (-not $m.Timeseries)) {
+        return 0
+    }
+
+    $totalBytesPerSec = 0.0
+    $validSeriesCount = 0
+
+    foreach ($ts in $m.Timeseries) {
+        if ($null -ne $ts.Data) {
+            $sum = 0.0
+            $count = 0
+            foreach ($pt in $ts.Data) {
+                if ($null -ne $pt.Average) {
+                    $sum += [double]$pt.Average
+                    $count++
+                }
+            }
+            if ($count -gt 0) {
+                $totalBytesPerSec += ($sum / $count)
+                $validSeriesCount++
+            }
+        }
+    }
+
+    if ($validSeriesCount -eq 0) {
+        return 0
+    }
+
+    $totalMBps = $totalBytesPerSec / 1048576.0
+    return [Math]::Round($totalMBps, 2)
+}
+
+$allResults = New-Object System.Collections.Generic.List[object]
+
+foreach ($subId in $SubscriptionIds) {
+    try {
+        $null = Set-AzContext -Subscription $subId -ErrorAction Stop
+
+        $ctx = Get-AzContext
+        $subName   = $ctx.Subscription.Name
+        $subRealId = $ctx.Subscription.Id
+
+        Write-Host "==== Subscription : $subName ($subRealId) ====" -ForegroundColor Cyan
+
+        $allVms = Get-AzVM -ErrorAction Stop
+        $vms = New-Object System.Collections.Generic.List[object]
+        foreach ($v in $allVms) {
+            if ($v.Name -match $NamePattern) {
+                $vms.Add($v)
+            }
+        }
+
+        Write-Host "VMs trouvees (pattern '$NamePattern') : $($vms.Count)" -ForegroundColor Green
+
+        foreach ($vm in $vms) {
+            Write-Host "Extraction des metriques pour la VM : $($vm.Name)..."
+
+            $osAvg24h   = Get-AvgMetricTotalMBps -ResourceId $vm.Id -MetricName "OS Disk Write Bytes/sec"   -StartTime $start24h -EndTime $endDate -MetricNamespace $MetricNamespace
+            $osAvg48h   = Get-AvgMetricTotalMBps -ResourceId $vm.Id -MetricName "OS Disk Write Bytes/sec"   -StartTime $start48h -EndTime $endDate -MetricNamespace $MetricNamespace
+            $osAvg7d    = Get-AvgMetricTotalMBps -ResourceId $vm.Id -MetricName "OS Disk Write Bytes/sec"   -StartTime $start7d  -EndTime $endDate -MetricNamespace $MetricNamespace
+
+            $dataAvg24h = Get-AvgMetricTotalMBps -ResourceId $vm.Id -MetricName "Data Disk Write Bytes/sec" -StartTime $start24h -EndTime $endDate -MetricNamespace $MetricNamespace
+            $dataAvg48h = Get-AvgMetricTotalMBps -ResourceId $vm.Id -MetricName "Data Disk Write Bytes/sec" -StartTime $start48h -EndTime $endDate -MetricNamespace $MetricNamespace
+            $dataAvg7d  = Get-AvgMetricTotalMBps -ResourceId $vm.Id -MetricName "Data Disk Write Bytes/sec" -StartTime $start7d  -EndTime $endDate -MetricNamespace $MetricNamespace
+
+            $row = [pscustomobject]@{
+                SubscriptionName        = $subName
+                ResourceGroup           = $vm.ResourceGroupName
+                Location                = $vm.Location
+                VMName                  = $vm.Name
+                "OS_Write_24h (Mo/s)"   = $osAvg24h
+                "OS_Write_48h (Mo/s)"   = $osAvg48h
+                "OS_Write_7d (Mo/s)"    = $osAvg7d
+                "Data_Write_24h (Mo/s)" = $dataAvg24h
+                "Data_Write_48h (Mo/s)" = $dataAvg48h
+                "Data_Write_7d (Mo/s)"  = $dataAvg7d
+            }
+            $allResults.Add($row)
+        }
+    }
+    catch {
+        Write-Warning "Impossible de traiter la subscription $subId : $($_.Exception.Message)"
+        continue
+    }
+}
+
+if ($allResults.Count -gt 0) {
+    Export-Csv -InputObject $allResults -Path $CsvSemicolonPath -NoTypeInformation -Delimiter ";" -Encoding utf8BOM
+    Export-Csv -InputObject $allResults -Path $CsvCommaPath     -NoTypeInformation -Delimiter "," -Encoding utf8BOM
+} else {
+    Write-Warning "Aucune donnee recuperee, les fichiers CSV n'ont pas ete generes."
+}
+
+Write-Host "Termine !" -ForegroundColor Green
+Write-Host "CSV (;) : $CsvSemicolonPath"
+Write-Host "CSV (,) : $CsvCommaPath"
+Write-Host "Lignes exportees : $($allResults.Count)"
