@@ -1,0 +1,213 @@
+J'avais fais à l'epoque une étude de study sur l'interet de faire le smart tiering sur les disk et donc ce que j'ai fais c'est regarder la vitesse d'ecriture des vm sur les disks pour les vms en prod pour voir si ils sont en dessous du seuil du hdd 8MO/s (corrige moi si je me trompe sur le seuil). toutes celles qui sont en dessous bah ils sont elligible. je ne sais plus comment j'avais fait jcrois que je suis aller dans metrics je sais pas si c'est via powershell mais j'ai eu l'excel generé. Je t'ai mis un bout de l'excel à quoi il ressemble. dis moi comment le faire ca si tu veux je peux te donner toutes les subscription de prod si jamais on fait un script powershell et qu'on le fait tourner
+je viens de retrouver le script powershell qui me faisait ca je viens de le relancer mais j'ai cette erreur : PS /home/el> ./collect-prd-metrics.ps1
+==== Subscription : SCOR-Gold-Prd-Core (dd640247-c8a0-4d39-9444-bb13c6f3c417) ====
+VMs trouvées (pattern 'PRD') : 672
+Extraction des métriques pour la VM : AUe2PrdAksJump-DMZCore...
+WARNING: Impossible de traiter la subscription dd640247-c8a0-4d39-9444-bb13c6f3c417 : The term ':FromMinutes' is not recognized as a name of a cmdlet, function, script file, or executable program.
+Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+==== Subscription : SCOR-Gold-Prd-CRO (7d9c4572-aacb-4974-b90c-9cb43c1579f9) ====
+VMs trouvées (pattern 'PRD') : 24
+Extraction des métriques pour la VM : AEnPrdCROGrafana...
+WARNING: Impossible de traiter la subscription 7d9c4572-aacb-4974-b90c-9cb43c1579f9 : The term ':FromMinutes' is not recognized as a name of a cmdlet, function, script file, or executable program.
+Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+==== Subscription : SCOR-Gold-Prd-SGI (75d2b152-7638-4cff-a4cf-5c86eaef3e89) ====
+VMs trouvées (pattern 'PRD') : 23
+Extraction des métriques pour la VM : AEnPrdCCI...
+WARNING: Impossible de traiter la subscription 75d2b152-7638-4cff-a4cf-5c86eaef3e89 : The term ':FromMinutes' is not recognized as a name of a cmdlet, function, script file, or executable program.
+Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+==== Subscription : SCOR-Gold-Prd-SGL (4a898a92-83ea-4b19-82bd-ce6673d35900) ====
+VMs trouvées (pattern 'PRD') : 47
+Extraction des métriques pour la VM : AUe2PrdActEaDb...
+WARNING: Impossible de traiter la subscription 4a898a92-83ea-4b19-82bd-ce6673d35900 : The term ':FromMinutes' is not recognized as a name of a cmdlet, function, script file, or executable program.
+Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+==== Subscription : SOLEM-Prod (327d24cf-e658-41c1-9af9-318687756ba4) ====
+VMs trouvées (pattern 'PRD') : 17
+Extraction des métriques pour la VM : AEnPrdSolemscan...
+WARNING: Impossible de traiter la subscription 327d24cf-e658-41c1-9af9-318687756ba4 : The term ':FromMinutes' is not recognized as a name of a cmdlet, function, script file, or executable program.
+Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+Terminé !
+CSV (;) : ./PRD_VM_Metrics_AllSubs_semicolon.csv
+CSV (,) : ./PRD_VM_Metrics_AllSubs_comma.csv
+Lignes exportées : 0
+
+
+Ca donne un csv vide avec une cellule avec des caracteres bizarres.
+
+je te mets le script entier ici :
+
+# Collect les metrique de OS et disk write byte per second sur toutes les vms de prod (verifier et/ou modifier les subscriptions à parcourir si besoin) et en sortie un .csv
+param(
+    [string]$NamePattern = 'PRD',
+
+    # Subscriptions à parcourir
+    [string[]]$SubscriptionIds = @(
+        "dd640247-c8a0-4d39-9444-bb13c6f3c417", # SCOR-Gold-Prd-Core
+        "7d9c4572-aacb-4974-b90c-9cb43c1579f9", # SCOR-Gold-Prd-CRO
+        "75d2b152-7638-4cff-a4cf-5c86eaef3e89", # SCOR-Gold-Prd-SGI
+        "4a898a92-83ea-4b19-82bd-ce6673d35900", # SCOR-Gold-Prd-SGL
+        "327d24cf-e658-41c1-9af9-318687756ba4"  # SOLEM-Prod
+    ),
+
+    # Namespace métriques VM (on tente avec, puis fallback sans si besoin)
+    [string]$MetricNamespace = "Microsoft.Compute/virtualMachines",
+
+    # Exports
+    [string]$CsvSemicolonPath = "./PRD_VM_Metrics_AllSubs_semicolon.csv",
+    [string]$CsvCommaPath     = "./PRD_VM_Metrics_AllSubs_comma.csv"
+)
+
+# Fenêtres temporelles
+$endDate   = Get-Date
+$start24h  = $endDate.AddDays(-1)
+$start48h  = $endDate.AddDays(-2)
+$start7d   = $endDate.AddDays(-7)
+
+function Get-TimeGrain([datetime]$start, [datetime]$end) {
+    $days = ($end - $start).TotalDays
+    if ($days -gt 2) { return :FromHours(1) }   # 7j -> 1h
+    return :FromMinutes(5)                      # 24/48h -> 5min
+}
+
+function Get-AvgMetricTotal {
+    param(
+        [Parameter(Mandatory)][string]$ResourceId,
+        [Parameter(Mandatory)][string]$MetricName,
+        [Parameter(Mandatory)][datetime]$StartTime,
+        [Parameter(Mandatory)][datetime]$EndTime,
+        [string]$MetricNamespace
+    )
+
+    $tg = Get-TimeGrain -start $StartTime -end $EndTime
+    $m = $null
+
+    # 1) Essai AVEC MetricNamespace (quand disponible)
+    try {
+        if ($MetricNamespace -and $MetricNamespace.Trim().Length -gt 0) {
+            $m = Get-AzMetric -ResourceId $ResourceId `
+                              -MetricName $MetricName `
+                              -AggregationType Average `
+                              -StartTime $StartTime -EndTime $EndTime `
+                              -TimeGrain $tg `
+                              -MetricNamespace $MetricNamespace `
+                              -DetailedOutput `
+                              -ErrorAction Stop
+        }
+        else {
+            throw "MetricNamespace vide"
+        }
+    }
+    catch {
+        # 2) Fallback : essai SANS MetricNamespace (souvent plus tolérant)
+        try {
+            $m = Get-AzMetric -ResourceId $ResourceId `
+                              -MetricName $MetricName `
+                              -AggregationType Average `
+                              -StartTime $StartTime -EndTime $EndTime `
+                              -TimeGrain $tg `
+                              -DetailedOutput `
+                              -ErrorAction Stop
+        }
+        catch {
+            Write-Warning "Métrique indisponible ($MetricName) sur $ResourceId : $($_.Exception.Message)"
+            return 0
+        }
+    }
+
+    if (-not $m -or -not $m.Timeseries) { return 0 }
+
+    # Multi-timeseries : moyenne par série puis somme (utile si plusieurs data disks)
+    $seriesAvgs = @(
+        foreach ($ts in $m.Timeseries) {
+            ($ts.Data | Measure-Object -Property Average -Average).Average
+        }
+    ) | Where-Object { $_ -ne $null }
+
+    if (-not $seriesAvgs -or $seriesAvgs.Count -eq 0) { return 0 }
+
+    $total = ($seriesAvgs | Measure-Object -Sum).Sum
+    return :Round($total, 2)
+}
+
+$allResults = @()
+
+foreach ($subId in $SubscriptionIds) {
+    try {
+        # Changer le contexte de subscription
+        Set-AzContext -Subscription $subId -ErrorAction Stop | Out-Null  # recommandé pour basculer de subscription [2](https://learn.microsoft.com/en-us/azure/cloud-shell/get-started/classic)
+
+        $ctx = Get-AzContext
+        $subName   = $ctx.Subscription.Name
+        $subRealId = $ctx.Subscription.Id
+
+        Write-Host "==== Subscription : $subName ($subRealId) ===="
+
+        $vms = Get-AzVM -ErrorAction Stop | Where-Object { $_.Name -match $NamePattern }
+        Write-Host "VMs trouvées (pattern '$NamePattern') : $($vms.Count)"
+
+        foreach ($vm in $vms) {
+            Write-Host "Extraction des métriques pour la VM : $($vm.Name)..."
+
+            $osAvg24h   = Get-AvgMetricTotal -ResourceId $vm.Id -MetricName "OS Disk Write Bytes/sec"   -StartTime $start24h -EndTime $endDate -MetricNamespace $MetricNamespace
+            $osAvg48h   = Get-AvgMetricTotal -ResourceId $vm.Id -MetricName "OS Disk Write Bytes/sec"   -StartTime $start48h -EndTime $endDate -MetricNamespace $MetricNamespace
+            $osAvg7d    = Get-AvgMetricTotal -ResourceId $vm.Id -MetricName "OS Disk Write Bytes/sec"   -StartTime $start7d  -EndTime $endDate -MetricNamespace $MetricNamespace
+
+            $dataAvg24h = Get-AvgMetricTotal -ResourceId $vm.Id -MetricName "Data Disk Write Bytes/sec" -StartTime $start24h -EndTime $endDate -MetricNamespace $MetricNamespace
+            $dataAvg48h = Get-AvgMetricTotal -ResourceId $vm.Id -MetricName "Data Disk Write Bytes/sec" -StartTime $start48h -EndTime $endDate -MetricNamespace $MetricNamespace
+            $dataAvg7d  = Get-AvgMetricTotal -ResourceId $vm.Id -MetricName "Data Disk Write Bytes/sec" -StartTime $start7d  -EndTime $endDate -MetricNamespace $MetricNamespace
+
+            $allResults += [pscustomobject]@{
+                SubscriptionName         = $subName
+                SubscriptionId           = $subRealId
+                ResourceGroup            = $vm.ResourceGroupName
+                Location                 = $vm.Location
+                VMName                   = $vm.Name
+                OS_Write_Bytes_Sec_24h   = $osAvg24h
+                OS_Write_Bytes_Sec_48h   = $osAvg48h
+                OS_Write_Bytes_Sec_7d    = $osAvg7d
+                Data_Write_Bytes_Sec_24h = $dataAvg24h
+                Data_Write_Bytes_Sec_48h = $dataAvg48h
+                Data_Write_Bytes_Sec_7d  = $dataAvg7d
+            }
+        }
+    }
+    catch {
+        Write-Warning "Impossible de traiter la subscription $subId : $($_.Exception.Message)"
+        continue
+    }
+}
+
+# Ordonner les colonnes
+$allResults = $allResults | Select-Object `
+    SubscriptionName, SubscriptionId, ResourceGroup, Location, VMName, `
+    OS_Write_Bytes_Sec_24h, OS_Write_Bytes_Sec_48h, OS_Write_Bytes_Sec_7d, `
+    Data_Write_Bytes_Sec_24h, Data_Write_Bytes_Sec_48h, Data_Write_Bytes_Sec_7d
+
+# Export CSV (UTF8 BOM pour Excel)
+$allResults | Export-Csv -Path $CsvSemicolonPath -NoTypeInformation -Delimiter ";" -Encoding utf8BOM  # Export-Csv: delimiter/encoding [3](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/export-csv?view=powershell-7.6)
+$allResults | Export-Csv -Path $CsvCommaPath     -NoTypeInformation -Delimiter "," -Encoding utf8BOM  # Export-Csv: delimiter/encoding [3](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/export-csv?view=powershell-7.6)
+
+Write-Host "Terminé !"
+Write-Host "CSV (;) : $CsvSemicolonPath"
+Write-Host "CSV (,) : $CsvCommaPath"
+Write-Host "Lignes exportées : $($allResults.Count)"
+
+
+ET VOICI A QUOI DOIT RESSEMBLER LE FICHIER EXCEL FINAL, merci de me corriger le script et de me le donner en entier
+SubscriptionName	ResourceGroup	Location	VMName	OS_Write_24h (Mo/s)	OS_Write_48h (Mo/s)	OS_Write_7d (Mo/s)	Data_Write_24h (Mo/s)	Data_Write_48h (Mo/s)	Data_Write_7d (Mo/s)
+SCOR-Gold-Prd-Core	AUE2PRDRG-AKSDMZCORE	eastus2	AUe2PrdAksJump-DMZCore	0.08	0.08	0.08	0	0	0
+SCOR-Gold-Prd-Core	AUE2PRDRG-AKSSHAREDCORE	eastus2	AUe2PrdAksJump-SharedCore	0.08	0.08	0.09	0	0	0
+SCOR-Gold-Prd-Core	AUE2PRDRG-APEX	eastus2	AUe2PrdApexbe01	0.15	0.14	0.14	0	0	0
+SCOR-Gold-Prd-Core	AUE2PRDRG-APEX	eastus2	AUe2PrdApexDb01	0.14	0.14	0.14	0	0	0
+SCOR-Gold-Prd-Core	AUE2PRDRG-APEX	eastus2	AUe2PrdApexFe01	0.13	0.12	0.12	0	0	0
+SCOR-Gold-Prd-Core	AUE2PRDRG-AXIS	eastus2	AUe2PrdAxisAs	0.41	0.38	0.36	0.93	0.75	0.5
+SCOR-Gold-Prd-Core	AUE2PRDRG-AXIS	eastus2	AUe2PrdAxisDb	0.66	0.66	0.63	0	0.01	0.01
+SCOR-Gold-Prd-Core	AUE2PRDRG-CASE	eastus2	AUe2PrdCaseDb01	0.13	0.13	0.13	0	0	0
+SCOR-Gold-Prd-Core	AUE2PRDRG-DEVOPS	eastus2	AUe2PrdDvOpsBld	0.15	0.14	0.13	0.04	0.04	0.04
+SCOR-Gold-Prd-Core	AUE2PRDRG-FUSIONRMS	eastus2	Aue2PrdTabAs	0.4	0.41	0.4	0	0	0
+SCOR-Gold-Prd-Core	AUE2PRDRG-NESSUS	eastus2	AUe2PrdNessus07	0.54	0.54	0.54	0.08	0.07	0.07
+SCOR-Gold-Prd-Core	AUE2PRDRG-NESSUS	eastus2	AUe2PrdNessus08	0.52	0.52	0.52	0.08	0.07	0.06
+SCOR-Gold-Prd-Core	AUE2PRDRG-NESSUS	eastus2	AUe2PrdNessus09	0.53	0.53	0.53	0.08	0.07	0.06
+SCOR-Gold-Prd-Core	AUE2PRDRG-NESSUS	eastus2	AUe2PrdNessus10	0.54	0.53	0.53	0.09	0.08	0.06
+SCOR-Gold-Prd-Core	AUE2PRDRG-NESSUS	eastus2	AUe2PrdNessus11	0.11	0.11	0.11	0.08	0.07	0.06
+SCOR-Gold-Prd-Core	AUE2PRDRG-NESSUS	eastus2	AUe2PrdNessus12	0.54	0.54	0.54	0.09	0.07	0.06
+SCOR-Gold-Prd-Core	AUE2PRDRG-PRODUCTIONTOOLS	eastus2	Aue2Prdadm01	0.13	0.12	0.12	0	0	0
