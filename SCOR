@@ -1,6 +1,27 @@
+La c'est mieux mais les csv ne sont pas generé !
+
 PS /home/el> ./collect-prd-metrics_V2.ps1
-ParserError: /home/el/collect-prd-metrics_V2.ps1:148
-Line |
- 148 |      $allResults \vert{} Export-Csv -Path$CsvSemicolonPath -NoTypeInfo …
-     |                  ~~~~~
-     | Unexpected token '\vert' in expression or statement.
+==== Subscription : SCOR-Gold-Prd-Core (dd640247-c8a0-4d39-9444-bb13c6f3c417) ====
+VMs trouvées (pattern 'PRD') : 672
+Extraction des métriques pour la VM : AUe2PrdAksJump-DMZCore...
+WARNING: Impossible de traiter la subscription dd640247-c8a0-4d39-9444-bb13c6f3c417 : A parameter cannot be found that matches parameter name 'ResourceId$vm'.
+==== Subscription : SCOR-Gold-Prd-CRO (7d9c4572-aacb-4974-b90c-9cb43c1579f9) ====
+VMs trouvées (pattern 'PRD') : 24
+Extraction des métriques pour la VM : AEnPrdCROGrafana...
+WARNING: Impossible de traiter la subscription 7d9c4572-aacb-4974-b90c-9cb43c1579f9 : A parameter cannot be found that matches parameter name 'ResourceId$vm'.
+==== Subscription : SCOR-Gold-Prd-SGI (75d2b152-7638-4cff-a4cf-5c86eaef3e89) ====
+VMs trouvées (pattern 'PRD') : 23
+Extraction des métriques pour la VM : AEnPrdCCI...
+WARNING: Impossible de traiter la subscription 75d2b152-7638-4cff-a4cf-5c86eaef3e89 : A parameter cannot be found that matches parameter name 'ResourceId$vm'.
+==== Subscription : SCOR-Gold-Prd-SGL (4a898a92-83ea-4b19-82bd-ce6673d35900) ====
+VMs trouvées (pattern 'PRD') : 47
+Extraction des métriques pour la VM : AUe2PrdActEaDb...
+WARNING: Impossible de traiter la subscription 4a898a92-83ea-4b19-82bd-ce6673d35900 : A parameter cannot be found that matches parameter name 'ResourceId$vm'.
+==== Subscription : SOLEM-Prod (327d24cf-e658-41c1-9af9-318687756ba4) ====
+VMs trouvées (pattern 'PRD') : 17
+Extraction des métriques pour la VM : AEnPrdSolemscan...
+WARNING: Impossible de traiter la subscription 327d24cf-e658-41c1-9af9-318687756ba4 : A parameter cannot be found that matches parameter name 'ResourceId$vm'.
+WARNING: Aucune donnée récupérée, les fichiers CSV n'ont pas été générés.
+Terminé !
+CSV (;) : ./PRD_VM_Metrics_AllSubs_semicolon.csv
+CSV (,) : ./PRD_VM_Metrics_AllSubs_comma.csv
