@@ -1,6 +1,6 @@
 PS /home/el> ./collect-prd-metrics_V2.ps1
-ParserError: /home/el/collect-prd-metrics_V2.ps1:85
+ParserError: /home/el/collect-prd-metrics_V2.ps1:148
 Line |
-  85 |          foreach ($ts in$m.Timeseries) {
-     |                      ~
-     | Missing 'in' after variable in foreach loop. The correct form is: foreach ($a in $b) {...}
+ 148 |      $allResults \vert{} Export-Csv -Path$CsvSemicolonPath -NoTypeInfo …
+     |                  ~~~~~
+     | Unexpected token '\vert' in expression or statement.
