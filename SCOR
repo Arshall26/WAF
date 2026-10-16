@@ -1,162 +1,47 @@
-param(
-    [string]$NamePattern = 'PRD',
+Once the ASR replication is actively targeting Standard HDD storage and the FinOps runbook is attached to the Recovery Plan, the Production team must execute a DR drill to validate the automated tiering sequence.
 
-    [string[]]$SubscriptionIds = @(
-        "dd640247-c8a0-4d39-9444-bb13c6f3c417",
-        "7d9c4572-aacb-4974-b90c-9cb43c1579f9",
-        "75d2b152-7638-4cff-a4cf-5c86eaef3e89",
-        "4a898a92-83ea-4b19-82bd-ce6673d35900",
-        "327d24cf-e658-41c1-9af9-318687756ba4"
-    ),
+5.1. Initiating the Test Failover
 
-    [string]$MetricNamespace = "Microsoft.Compute/virtualMachines",
-    [string]$CsvSemicolonPath = "./PRD_VM_Metrics_MAX_AllSubs_semicolon.csv",
-    [string]$CsvCommaPath     = "./PRD_VM_Metrics_MAX_AllSubs_comma.csv"
-)
+In the Azure Portal, navigate to your Recovery Services Vault.
 
-# Suppression des anciens fichiers CSV s'ils existent deja
-if (Test-Path -Path $CsvSemicolonPath) {
-    Remove-Item -Path $CsvSemicolonPath -Force
-}
-if (Test-Path -Path $CsvCommaPath) {
-    Remove-Item -Path $CsvCommaPath -Force
-}
+Under Manage, select Recovery Plans (Site Recovery) and click your target plan (e.g., RP-ANTARES).
 
-$endDate  = Get-Date
-$start24h = $endDate.AddDays(-1)
-$start48h = $endDate.AddDays(-2)
-$start7d  = $endDate.AddDays(-7)
+At the top of the pane, click Test Failover.
 
-function Get-TimeGrain([datetime]$start, [datetime]$end) {
-    $days = ($end - $start).TotalDays
-    if ($days -gt 2) {
-        return [TimeSpan]::FromHours(1)
-    }
-    return [TimeSpan]::FromMinutes(5)
-}
+[Screen: The Recovery Plan overview page with a red box highlighting the "Test Failover" button]
 
-function Get-MaxMetricTotalMBps {
-    param(
-        [string]$ResourceId,
-        [string]$MetricName,
-        [datetime]$StartTime,
-        [datetime]$EndTime,
-        [string]$MetricNamespace
-    )
+In the configuration blade:
 
-    $tg = Get-TimeGrain -start $StartTime -end $EndTime
-    $m = $null
+Recovery Point: Leave as the latest available.
 
-    try {
-        if ($MetricNamespace -and ($MetricNamespace.Trim().Length -gt 0)) {
-            $m = Get-AzMetric -ResourceId $ResourceId -MetricName $MetricName -AggregationType Average -StartTime $StartTime -EndTime $EndTime -TimeGrain $tg -MetricNamespace $MetricNamespace -DetailedOutput -WarningAction SilentlyContinue -ErrorAction Stop
-        } else {
-            throw "MetricNamespace vide"
-        }
-    }
-    catch {
-        try {
-            $m = Get-AzMetric -ResourceId $ResourceId -MetricName $MetricName -AggregationType Average -StartTime $StartTime -EndTime $EndTime -TimeGrain $tg -DetailedOutput -WarningAction SilentlyContinue -ErrorAction Stop
-        }
-        catch {
-            Write-Warning "Metrique indisponible ($MetricName) sur $ResourceId : $($_.Exception.Message)"
-            return 0
-        }
-    }
+Azure virtual network: Select the designated isolated testing VNet (do not use a production VNet).
 
-    if ((-not $m) -or (-not $m.Timeseries)) {
-        return 0
-    }
+[Screen: The Test Failover configuration blade showing the selected Test VNet]
 
-    $totalMaxBytesPerSec = 0.0
-    $validSeriesCount = 0
+Click OK to trigger the drill.
 
-    foreach ($ts in $m.Timeseries) {
-        if ($null -ne $ts.Data) {
-            $maxSeries = 0.0
-            $hasData = $false
-            foreach ($pt in $ts.Data) {
-                if ($null -ne $pt.Average) {
-                    $val = [double]$pt.Average
-                    if ($val -gt $maxSeries) {
-                        $maxSeries = $val
-                    }
-                    $hasData = $true
-                }
-            }
-            if ($hasData) {
-                $totalMaxBytesPerSec += $maxSeries
-                $validSeriesCount++
-            }
-        }
-    }
+5.2. Expected Behavior & Performance Profile
+As the Recovery Plan executes, it is critical for the Production and QA teams to understand the expected sequence and the temporary performance profile of the newly provisioned environment:
 
-    if ($validSeriesCount -eq 0) {
-        return 0
-    }
+The Automation Sequence: ASR will initially provision the target VM and attach the replicated Standard HDDs. Once the VM reaches the Group 1: Post-steps phase, the FinOps runbook takes over. It will gracefully power off the VM, upgrade all managed disks to Premium SSD, and power the VM back on. This automated sequence adds approximately 3 to 5 minutes to the total Recovery Time Objective (RTO).
 
-    $totalMBps = $totalMaxBytesPerSec / 1048576.0
-    return [Math]::Round($totalMBps, 2)
-}
+The "Cold Boot" Phenomenon: Upon first accessing the application in the DR region, testers will experience temporary latency. This is standard DR behavior caused by the VM executing a cold boot: RAM is entirely purged, application pools (e.g., IIS, Tomcat) must initialize, and database buffer caches must repopulate.
 
-$exportedCount = 0
+Lazy Loading: Azure performs background data hydration when initializing disks from snapshots. The first read of a data block may incur micro-latency.
 
-foreach ($subId in $SubscriptionIds) {
-    try {
-        $null = Set-AzContext -Subscription $subId -ErrorAction Stop
+Note for Testers: This initial latency is strictly tied to application caching and hydration, not the FinOps storage tiering. Performance will stabilize within minutes as the application warms up.
 
-        $ctx = Get-AzContext
-        $subName   = $ctx.Subscription.Name
-        $subRealId = $ctx.Subscription.Id
+5.3. Validating the Smart Tiering Automation
+To confirm the FinOps runbook successfully executed its mandate, the Production team must verify the disk SKUs in the target environment.
 
-        Write-Host "==== Subscription : $subName ($subRealId) ====" -ForegroundColor Cyan
+Navigate to the Target DR Resource Group (e.g., AEnPocRg-FinOps-asr).
 
-        $allVms = Get-AzVM -ErrorAction Stop
-        $vms = New-Object System.Collections.Generic.List[object]
-        foreach ($v in $allVms) {
-            if ($v.Name -match $NamePattern) {
-                $vms.Add($v)
-            }
-        }
+Select the newly created target VM and click on Disks in the left-hand menu.
 
-        Write-Host "VMs trouvees (pattern '$NamePattern') : $($vms.Count)" -ForegroundColor Green
+[Screen: The VM "Disks" blade highlighting the "Performance tier" column]
 
-        foreach ($vm in $vms) {
-            Write-Host "Extraction des metriques MAX pour la VM : $($vm.Name)..."
+Verify that the OS and Data disks now show Premium SSD (or your designated high-performance tier).
 
-            $osMax24h   = Get-MaxMetricTotalMBps -ResourceId $vm.Id -MetricName "OS Disk Write Bytes/sec"   -StartTime $start24h -EndTime $endDate -MetricNamespace $MetricNamespace
-            $osMax48h   = Get-MaxMetricTotalMBps -ResourceId $vm.Id -MetricName "OS Disk Write Bytes/sec"   -StartTime $start48h -EndTime $endDate -MetricNamespace $MetricNamespace
-            $osMax7d    = Get-MaxMetricTotalMBps -ResourceId $vm.Id -MetricName "OS Disk Write Bytes/sec"   -StartTime $start7d  -EndTime $endDate -MetricNamespace $MetricNamespace
+Log Verification (Optional): If a failure occurs, navigate to your Automation Account, click on Jobs, and select the latest execution of the ASR-SmartTiering-PremiumUpgrade runbook. The Output tab will contain detailed logs identifying the specific VMs processed and any Azure API errors encountered.
 
-            $dataMax24h = Get-MaxMetricTotalMBps -ResourceId $vm.Id -MetricName "Data Disk Write Bytes/sec" -StartTime $start24h -EndTime $endDate -MetricNamespace $MetricNamespace
-            $dataMax48h = Get-MaxMetricTotalMBps -ResourceId $vm.Id -MetricName "Data Disk Write Bytes/sec" -StartTime $start48h -EndTime $endDate -MetricNamespace $MetricNamespace
-            $dataMax7d  = Get-MaxMetricTotalMBps -ResourceId $vm.Id -MetricName "Data Disk Write Bytes/sec" -StartTime $start7d  -EndTime $endDate -MetricNamespace $MetricNamespace
-
-            $row = [pscustomobject]@{
-                SubscriptionName        = $subName
-                ResourceGroup           = $vm.ResourceGroupName
-                Location                = $vm.Location
-                VMName                  = $vm.Name
-                "OS_Write_24h (Mo/s)"   = $osMax24h
-                "OS_Write_48h (Mo/s)"   = $osMax48h
-                "OS_Write_7d (Mo/s)"    = $osMax7d
-                "Data_Write_24h (Mo/s)" = $dataMax24h
-                "Data_Write_48h (Mo/s)" = $dataMax48h
-                "Data_Write_7d (Mo/s)"  = $dataMax7d
-            }
-
-            Export-Csv -InputObject $row -Path $CsvSemicolonPath -NoTypeInformation -Delimiter ";" -Encoding utf8BOM -Append
-            Export-Csv -InputObject $row -Path $CsvCommaPath     -NoTypeInformation -Delimiter "," -Encoding utf8BOM -Append
-            $exportedCount++
-        }
-    }
-    catch {
-        Write-Warning "Impossible de traiter la subscription $subId : $($_.Exception.Message)"
-        continue
-    }
-}
-
-Write-Host "Termine !" -ForegroundColor Green
-Write-Host "CSV (;) : $CsvSemicolonPath"
-Write-Host "CSV (,) : $CsvCommaPath"
-Write-Host "Lignes exportees : $exportedCount"
+[Screen: The Automation Account Jobs "Output" tab showing the script logs (e.g., ">>> FRESH VM DETECTED... Upgrading to Premium SSD")]
