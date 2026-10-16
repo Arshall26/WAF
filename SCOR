@@ -10,8 +10,8 @@ param(
     ),
 
     [string]$MetricNamespace = "Microsoft.Compute/virtualMachines",
-    [string]$CsvSemicolonPath = "./PRD_VM_Metrics_AllSubs_semicolon.csv",
-    [string]$CsvCommaPath     = "./PRD_VM_Metrics_AllSubs_comma.csv"
+    [string]$CsvSemicolonPath = "./PRD_VM_Metrics_MAX_AllSubs_semicolon.csv",
+    [string]$CsvCommaPath     = "./PRD_VM_Metrics_MAX_AllSubs_comma.csv"
 )
 
 # Suppression des anciens fichiers CSV s'ils existent deja
@@ -35,7 +35,7 @@ function Get-TimeGrain([datetime]$start, [datetime]$end) {
     return [TimeSpan]::FromMinutes(5)
 }
 
-function Get-AvgMetricTotalMBps {
+function Get-MaxMetricTotalMBps {
     param(
         [string]$ResourceId,
         [string]$MetricName,
@@ -68,21 +68,24 @@ function Get-AvgMetricTotalMBps {
         return 0
     }
 
-    $totalBytesPerSec = 0.0
+    $totalMaxBytesPerSec = 0.0
     $validSeriesCount = 0
 
     foreach ($ts in $m.Timeseries) {
         if ($null -ne $ts.Data) {
-            $sum = 0.0
-            $count = 0
+            $maxSeries = 0.0
+            $hasData = $false
             foreach ($pt in $ts.Data) {
                 if ($null -ne $pt.Average) {
-                    $sum += [double]$pt.Average
-                    $count++
+                    $val = [double]$pt.Average
+                    if ($val -gt $maxSeries) {
+                        $maxSeries = $val
+                    }
+                    $hasData = $true
                 }
             }
-            if ($count -gt 0) {
-                $totalBytesPerSec += ($sum / $count)
+            if ($hasData) {
+                $totalMaxBytesPerSec += $maxSeries
                 $validSeriesCount++
             }
         }
@@ -92,7 +95,7 @@ function Get-AvgMetricTotalMBps {
         return 0
     }
 
-    $totalMBps = $totalBytesPerSec / 1048576.0
+    $totalMBps = $totalMaxBytesPerSec / 1048576.0
     return [Math]::Round($totalMBps, 2)
 }
 
@@ -119,30 +122,29 @@ foreach ($subId in $SubscriptionIds) {
         Write-Host "VMs trouvees (pattern '$NamePattern') : $($vms.Count)" -ForegroundColor Green
 
         foreach ($vm in $vms) {
-            Write-Host "Extraction des metriques pour la VM : $($vm.Name)..."
+            Write-Host "Extraction des metriques MAX pour la VM : $($vm.Name)..."
 
-            $osAvg24h   = Get-AvgMetricTotalMBps -ResourceId $vm.Id -MetricName "OS Disk Write Bytes/sec"   -StartTime $start24h -EndTime $endDate -MetricNamespace $MetricNamespace
-            $osAvg48h   = Get-AvgMetricTotalMBps -ResourceId $vm.Id -MetricName "OS Disk Write Bytes/sec"   -StartTime $start48h -EndTime $endDate -MetricNamespace $MetricNamespace
-            $osAvg7d    = Get-AvgMetricTotalMBps -ResourceId $vm.Id -MetricName "OS Disk Write Bytes/sec"   -StartTime $start7d  -EndTime $endDate -MetricNamespace $MetricNamespace
+            $osMax24h   = Get-MaxMetricTotalMBps -ResourceId $vm.Id -MetricName "OS Disk Write Bytes/sec"   -StartTime $start24h -EndTime $endDate -MetricNamespace $MetricNamespace
+            $osMax48h   = Get-MaxMetricTotalMBps -ResourceId $vm.Id -MetricName "OS Disk Write Bytes/sec"   -StartTime $start48h -EndTime $endDate -MetricNamespace $MetricNamespace
+            $osMax7d    = Get-MaxMetricTotalMBps -ResourceId $vm.Id -MetricName "OS Disk Write Bytes/sec"   -StartTime $start7d  -EndTime $endDate -MetricNamespace $MetricNamespace
 
-            $dataAvg24h = Get-AvgMetricTotalMBps -ResourceId $vm.Id -MetricName "Data Disk Write Bytes/sec" -StartTime $start24h -EndTime $endDate -MetricNamespace $MetricNamespace
-            $dataAvg48h = Get-AvgMetricTotalMBps -ResourceId $vm.Id -MetricName "Data Disk Write Bytes/sec" -StartTime $start48h -EndTime $endDate -MetricNamespace $MetricNamespace
-            $dataAvg7d  = Get-AvgMetricTotalMBps -ResourceId $vm.Id -MetricName "Data Disk Write Bytes/sec" -StartTime $start7d  -EndTime $endDate -MetricNamespace $MetricNamespace
+            $dataMax24h = Get-MaxMetricTotalMBps -ResourceId $vm.Id -MetricName "Data Disk Write Bytes/sec" -StartTime $start24h -EndTime $endDate -MetricNamespace $MetricNamespace
+            $dataMax48h = Get-MaxMetricTotalMBps -ResourceId $vm.Id -MetricName "Data Disk Write Bytes/sec" -StartTime $start48h -EndTime $endDate -MetricNamespace $MetricNamespace
+            $dataMax7d  = Get-MaxMetricTotalMBps -ResourceId $vm.Id -MetricName "Data Disk Write Bytes/sec" -StartTime $start7d  -EndTime $endDate -MetricNamespace $MetricNamespace
 
             $row = [pscustomobject]@{
                 SubscriptionName        = $subName
                 ResourceGroup           = $vm.ResourceGroupName
                 Location                = $vm.Location
                 VMName                  = $vm.Name
-                "OS_Write_24h (Mo/s)"   = $osAvg24h
-                "OS_Write_48h (Mo/s)"   = $osAvg48h
-                "OS_Write_7d (Mo/s)"    = $osAvg7d
-                "Data_Write_24h (Mo/s)" = $dataAvg24h
-                "Data_Write_48h (Mo/s)" = $dataAvg48h
-                "Data_Write_7d (Mo/s)"  = $dataAvg7d
+                "OS_Write_24h (Mo/s)"   = $osMax24h
+                "OS_Write_48h (Mo/s)"   = $osMax48h
+                "OS_Write_7d (Mo/s)"    = $osMax7d
+                "Data_Write_24h (Mo/s)" = $dataMax24h
+                "Data_Write_48h (Mo/s)" = $dataMax48h
+                "Data_Write_7d (Mo/s)"  = $dataMax7d
             }
 
-            # Export ligne par ligne avec -Append : exporte chaque objet individuellement sans utiliser de pipe (|)
             Export-Csv -InputObject $row -Path $CsvSemicolonPath -NoTypeInformation -Delimiter ";" -Encoding utf8BOM -Append
             Export-Csv -InputObject $row -Path $CsvCommaPath     -NoTypeInformation -Delimiter "," -Encoding utf8BOM -Append
             $exportedCount++
