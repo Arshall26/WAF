@@ -4,12 +4,10 @@ param(
 
 $ErrorActionPreference = "Continue"
 Write-Output "========================================================="
-Write-Output "=== ASR FinOps Smart Tiering Runbook (Time-Based) ==="
+Write-Output "=== ASR FinOps Smart Tiering Runbook (Failback to HDD) ==="
 Write-Output "========================================================="
 
-$TargetSku = "Premium_LRS"
-# On cherche les disques créés dans les 60 dernières minutes (UTC pour coller aux logs Azure)
-$TimeThreshold = (Get-Date).ToUniversalTime().AddMinutes(-60)
+$TargetSku = "Standard_LRS"
 
 Write-Output "-> Connecting to Azure..."
 Disable-AzContextAutosave -Scope Process | Out-Null
@@ -27,81 +25,40 @@ foreach ($node in $vmNodes) {
 
     Write-Output "------------------------------------------------"
     Write-Output "-> Target RG: $targetRgName"
+    
+    # Sécurité 1 : Exécution exclusive sur les RG de DR (se terminant par -asr)
+    if ($targetRgName -notmatch "-asr$") {
+        Write-Output "    [Skip] Resource Group does not end with '-asr'. Skipping downgrade."
+        continue
+    }
+
     Set-AzContext -SubscriptionId $targetSubId | Out-Null
 
-    $allVms = Get-AzVM -ResourceGroupName $targetRgName
+    # Sécurité 2 : Ciblage exclusif des disques passifs ASR
+    $replicaDisks = Get-AzDisk -ResourceGroupName $targetRgName | Where-Object { $_.Name -like "*-ASRReplica" }
     
-    if ($null -eq $allVms) {
-        Write-Output "No VMs found in Resource Group. Skip."
+    if ($null -eq $replicaDisks -or $replicaDisks.Count -eq 0) {
+        Write-Output "    [Skip] No disks ending with '-ASRReplica' found."
         continue
     }
 
-    # 1. Détection dynamique de la VM de Failover basée sur l'heure de création du disque
-    $targetVms = @()
-    foreach ($vm in @($allVms)) {
-        if ($null -ne $vm.StorageProfile.OsDisk.ManagedDisk.Id) {
-            $osDiskId = $vm.StorageProfile.OsDisk.ManagedDisk.Id
-            $diskParts = $osDiskId -split "/"
-            $diskRg = $diskParts[4]
-            $diskName = $diskParts[8]
+    foreach ($disk in $replicaDisks) {
+        if ($disk.Sku.Name -ne $TargetSku) {
+            Write-Output "    Converting replica disk $($disk.Name) to $TargetSku..."
             
-            $osDisk = Get-AzDisk -ResourceGroupName $diskRg -DiskName $diskName
-            
-            if ($osDisk.TimeCreated -ge $TimeThreshold) {
-                Write-Output ">>> FRESH VM DETECTED: $($vm.Name) (Disk created at $($osDisk.TimeCreated))"
-                $targetVms += $vm
-            } else {
-                Write-Output "    [Ignored Old VM]: $($vm.Name) (Disk created at $($osDisk.TimeCreated))"
+            # Révocation du verrou SAS si ASR a déjà commencé la synchronisation
+            if ($disk.DiskState -eq "ActiveSAS") {
+                Write-Output "    Revoking active SAS lock on $($disk.Name)..."
+                Revoke-AzDiskAccess -ResourceGroupName $targetRgName -DiskName $disk.Name | Out-Null
+                Start-Sleep -Seconds 10
             }
-        }
-    }
 
-    if ($targetVms.Count -eq 0) {
-        Write-Output "No newly created VMs found in the last 60 minutes. Ending process."
-        continue
-    }
-
-    # 2. Traitement des VMs récentes (Stop -> Update -> Start)
-    foreach ($vm in $targetVms) {
-        $vmName = $vm.Name
-        Write-Output ">>> Processing VM: $vmName"
-        
-        $diskIds = @()
-        if ($null -ne $vm.StorageProfile.OsDisk.ManagedDisk.Id) { $diskIds += $vm.StorageProfile.OsDisk.ManagedDisk.Id }
-        foreach ($dataDisk in $vm.StorageProfile.DataDisks) {
-            if ($null -ne $dataDisk.ManagedDisk.Id) { $diskIds += $dataDisk.ManagedDisk.Id }
-        }
-
-        $disksToUpdate = @()
-        foreach ($diskId in $diskIds) {
-            $diskParts = $diskId -split "/"
-            $diskRg = $diskParts[4]
-            $diskName = $diskParts[8]
-            
-            $disk = Get-AzDisk -ResourceGroupName $diskRg -DiskName $diskName
-            if ($disk.Sku.Name -ne $TargetSku) {
-                $disksToUpdate += $disk
-            }
-        }
-
-        if ($disksToUpdate.Count -eq 0) {
-            Write-Output "    All disks are already $TargetSku. Skipping restart."
-            continue
-        }
-
-        Write-Output "    Stopping VM '$vmName' for disk conversion..."
-        Stop-AzVM -ResourceGroupName $targetRgName -Name $vmName -Force -NoWait:$false | Out-Null
-        Write-Output "    VM stopped."
-
-        foreach ($disk in $disksToUpdate) {
-            Write-Output "    Converting disk $($disk.Name) to $TargetSku..."
             $diskUpdateConfig = New-AzDiskUpdateConfig -SkuName $TargetSku
-            Update-AzDisk -ResourceGroupName $disk.ResourceGroupName -DiskName $disk.Name -DiskUpdate $diskUpdateConfig | Out-Null
+            Update-AzDisk -ResourceGroupName $targetRgName -DiskName $disk.Name -DiskUpdate $diskUpdateConfig | Out-Null
+            Write-Output "    Disk $($disk.Name) successfully downgraded to Standard HDD."
+        } else {
+            Write-Output "    Disk $($disk.Name) is already $TargetSku."
         }
-
-        Write-Output "    Starting VM '$vmName'..."
-        Start-AzVM -ResourceGroupName $targetRgName -Name $vmName -NoWait:$false | Out-Null
-        Write-Output "    VM '$vmName' restarted with Premium SSDs!"
     }
 }
 
