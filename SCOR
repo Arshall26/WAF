@@ -1,39 +1,68 @@
-6.3. Maintaining Smart Tiering Post-DR: The Failback Runbook
-To prevent the newly created replica disks from inflating costs after a Reprotect, a second PowerShell runbook (ASR-SmartTiering-FailbackHDD) is integrated into the Recovery Plan.
+param(
+    [Parameter(Mandatory=$false)]
+    [string]$TargetResourceGroup = ""
+)
 
-This runbook automatically downgrades passive replica disks back to Standard HDD during both Failover and Failback events, utilizing strict safety filters to ensure zero conflict with active production VMs:
+$ErrorActionPreference = "Continue"
+Write-Output "========================================================="
+Write-Output "=== ASR FinOps Smart Tiering - Manual Failback to HDD ==="
+Write-Output "========================================================="
 
-Resource Group Filter: The script aborts immediately if the target Resource Group name does not end with -asr (ensuring it only runs in designated DR storage environments).
+$TargetSku = "Standard_LRS"
 
-Disk Naming Filter: It exclusively targets disks containing the -ASRReplica suffix.
+Write-Output "-> Connecting to Azure..."
+Disable-AzContextAutosave -Scope Process | Out-Null
+Connect-AzAccount -Identity | Out-Null
 
-Attachment State Filter: It actively ignores any disk with an Attached state, guaranteeing it never accidentally downgrades a running production or test VM.
+# Détermination des RGs à cibler
+$rgsToProcess = @()
 
-6.4. Integrating the Failback Runbook
+if ([string]::IsNullOrWhiteSpace($TargetResourceGroup)) {
+    Write-Output "-> No specific Resource Group provided. Scanning subscription for DR Resource Groups (*-asr)..."
+    $rgsToProcess = Get-AzResourceGroup | Where-Object { $_.ResourceGroupName -match "-asr$" }
+} else {
+    Write-Output "-> Targeted execution on Resource Group: $TargetResourceGroup"
+    $rgsToProcess = Get-AzResourceGroup -Name $TargetResourceGroup -ErrorAction SilentlyContinue
+}
 
-In your Azure Automation Account, create and publish a new PowerShell runbook containing the Failback logic (e.g., ASR-SmartTiering-FailbackHDD).
+if ($null -eq $rgsToProcess -or $rgsToProcess.Count -eq 0) {
+    Write-Output "    [Skip] No valid Resource Groups found ending with '-asr'. Exiting."
+    exit
+}
 
-Navigate to your Recovery Services Vault > Recovery Plans (Site Recovery) > target plan (e.g., RP-ANTARES).
+foreach ($rg in $rgsToProcess) {
+    $rgName = $rg.ResourceGroupName
+    Write-Output "------------------------------------------------"
+    Write-Output "-> Processing Target RG: $rgName"
+    
+    # Sécurité absolue : Ciblage exclusif des disques passifs ASR non attachés
+    $replicaDisks = Get-AzDisk -ResourceGroupName $rgName | Where-Object { $_.Name -like "*-ASRReplica" -and $_.DiskState -ne "Attached" }
+    
+    if ($null -eq $replicaDisks -or $replicaDisks.Count -eq 0) {
+        Write-Output "    [Skip] No passive ASR replica disks found in $rgName."
+        continue
+    }
 
-Click Customize.
+    foreach ($disk in $replicaDisks) {
+        if ($disk.Sku.Name -ne $TargetSku) {
+            Write-Output "    Converting replica disk $($disk.Name) to $TargetSku..."
+            
+            # Révocation du verrou SAS si ASR a déjà commencé la synchronisation
+            if ($disk.DiskState -eq "ActiveSAS") {
+                Write-Output "    Revoking active SAS lock on $($disk.Name)..."
+                Revoke-AzDiskAccess -ResourceGroupName $rgName -DiskName $disk.Name | Out-Null
+                Start-Sleep -Seconds 10
+            }
 
-In the Group 1: Post-steps section, add this second runbook as a Post action, placed directly after the initial Premium Upgrade runbook.
+            $diskUpdateConfig = New-AzDiskUpdateConfig -SkuName $TargetSku
+            Update-AzDisk -ResourceGroupName $rgName -DiskName $disk.Name -DiskUpdate $diskUpdateConfig | Out-Null
+            Write-Output "    Disk $($disk.Name) successfully downgraded to Standard HDD."
+        } else {
+            Write-Output "    Disk $($disk.Name) is already $TargetSku."
+        }
+    }
+}
 
-[Screen: The Recovery Plan configuration interface showing both runbooks listed sequentially under "Group 1: Post-steps"]
-
-Click Save.
-
-Execution Flow: During a failover, Runbook #1 upgrades the active VM disks to Premium SSD. Runbook #2 then activates, safely ignores the running VM, scans for orphaned or passive -ASRReplica disks, and downgrades them to Standard HDD.
-
-6.5. Post-DR FinOps Verification
-Following any Failover, Reprotect, or Test Failover, the Production team must verify that the automated tiering succeeded in both directions.
-
-Verify the Active VM (Target Region): Navigate to the Resource Group hosting the running VM. Check the Disks blade and confirm the active disks have a Performance tier of Premium SSD.
-
-Verify the Replica Storage (Source Region): Navigate to the source Resource Group (ending in -asr). Filter resources by Type: Disk and search for *-ASRReplica.
-
-[Screen: The -asr Resource Group filtered by Disks, showing only Standard HDDs for the passive replica disks]
-
-Confirm that all passive ASR replica disks display a Performance tier of Standard HDD.
-
-Log Validation: If discrepancies exist, navigate to the Automation Account > Jobs. Review the Output tab of the latest runbook executions to trace the dynamic logic and confirm successful downgrades.
+Write-Output "========================================================="
+Write-Output "=== END OF SCRIPT ==="
+Write-Output "========================================================="
