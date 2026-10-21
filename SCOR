@@ -1,48 +1,110 @@
-After successfully validating the application in the DR region, the environment must be properly decommissioned or failed back. Leaving the DR environment running unnecessarily incurs active compute charges and high-tier Premium SSD costs. The following procedures outline how to safely clean up the environment and restore the FinOps baseline.
+param(
+    [object]$RecoveryPlanContext
+)
 
-6.1. Standard DR Drill: Cleaning Up a Test FailoverUse this procedure if the DR drill was initiated using the "Test Failover" button.
+$ErrorActionPreference = "Continue"
+Write-Output "========================================================="
+Write-Output "=== ASR FinOps Smart Tiering Runbook (Time-Based) ==="
+Write-Output "========================================================="
 
-In the Azure Portal, navigate to your Recovery Services Vault.
+$TargetSku = "Premium_LRS"
+# On cherche les disques créés dans les 60 dernières minutes (UTC pour coller aux logs Azure)
+$TimeThreshold = (Get-Date).ToUniversalTime().AddMinutes(-60)
 
-Under Protected items, click on Replicated items and select the target VM.
+Write-Output "-> Connecting to Azure..."
+Disable-AzContextAutosave -Scope Process | Out-Null
+Connect-AzAccount -Identity | Out-Null
 
-At the top of the VM's overview page, click Cleanup test failover.
+$vmNodes = $RecoveryPlanContext.VmMap.PSObject.Properties.Value
 
-[Screen: The Replicated item overview page with a red box highlighting the "Cleanup test failover" button]
+foreach ($node in $vmNodes) {
+    $targetSubId = $node.SubscriptionId
+    $targetRgName = $node.ResourceGroupName
 
-In the validation pane, check the box indicating that testing is complete, and optionally provide a brief note (e.g., "Smart Tiering DR drill successful").
+    if ([string]::IsNullOrWhiteSpace($targetRgName)) {
+        continue
+    }
 
-Click OK.
+    Write-Output "------------------------------------------------"
+    Write-Output "-> Target RG: $targetRgName"
+    Set-AzContext -SubscriptionId $targetSubId | Out-Null
 
-FinOps Impact: ASR will automatically delete the test VM, the NICs, and the upgraded Premium SSDs in the target region. The passive replication on the underlying Standard HDDs continues uninterrupted, immediately returning the infrastructure to its optimized cost baseline.
+    $allVms = Get-AzVM -ResourceGroupName $targetRgName
+    
+    if ($null -eq $allVms) {
+        Write-Output "No VMs found in Resource Group. Skip."
+        continue
+    }
 
-6.2. Actual Disaster Event: Committing & ReprotectingUse this procedure if a real "Failover" was triggered (as opposed to a Test Failover). A real failover permanently shifts the production workload to the DR region and breaks the original replication.
+    # 1. Détection dynamique de la VM de Failover basée sur l'heure de création du disque
+    $targetVms = @()
+    foreach ($vm in @($allVms)) {
+        if ($null -ne $vm.StorageProfile.OsDisk.ManagedDisk.Id) {
+            $osDiskId = $vm.StorageProfile.OsDisk.ManagedDisk.Id
+            $diskParts = $osDiskId -split "/"
+            $diskRg = $diskParts[4]
+            $diskName = $diskParts[8]
+            
+            $osDisk = Get-AzDisk -ResourceGroupName $diskRg -DiskName $diskName
+            
+            if ($osDisk.TimeCreated -ge $TimeThreshold) {
+                Write-Output ">>> FRESH VM DETECTED: $($vm.Name) (Disk created at $($osDisk.TimeCreated))"
+                $targetVms += $vm
+            } else {
+                Write-Output "    [Ignored Old VM]: $($vm.Name) (Disk created at $($osDisk.TimeCreated))"
+            }
+        }
+    }
 
-Navigate to the Recovery Services Vault > Replicated items > select the target VM.
+    if ($targetVms.Count -eq 0) {
+        Write-Output "No newly created VMs found in the last 60 minutes. Ending process."
+        continue
+    }
 
-Click Commit at the top of the pane.
+    # 2. Traitement des VMs récentes (Stop -> Update -> Start)
+    foreach ($vm in $targetVms) {
+        $vmName = $vm.Name
+        Write-Output ">>> Processing VM: $vmName"
+        
+        $diskIds = @()
+        if ($null -ne $vm.StorageProfile.OsDisk.ManagedDisk.Id) { $diskIds += $vm.StorageProfile.OsDisk.ManagedDisk.Id }
+        foreach ($dataDisk in $vm.StorageProfile.DataDisks) {
+            if ($null -ne $dataDisk.ManagedDisk.Id) { $diskIds += $dataDisk.ManagedDisk.Id }
+        }
 
-Mechanism: This finalizes the failover. The VM is now permanently running in the West Europe DR region on Premium SSDs.
+        $disksToUpdate = @()
+        foreach ($diskId in $diskIds) {
+            $diskParts = $diskId -split "/"
+            $diskRg = $diskParts[4]
+            $diskName = $diskParts[8]
+            
+            $disk = Get-AzDisk -ResourceGroupName $diskRg -DiskName $diskName
+            if ($disk.Sku.Name -ne $TargetSku) {
+                $disksToUpdate += $disk
+            }
+        }
 
-[Screen: The Replicated item overview page highlighting the "Commit" button]
+        if ($disksToUpdate.Count -eq 0) {
+            Write-Output "    All disks are already $TargetSku. Skipping restart."
+            continue
+        }
 
-Once committed, click Reprotect to reverse the replication direction (from West Europe back to North Europe).
+        Write-Output "    Stopping VM '$vmName' for disk conversion..."
+        Stop-AzVM -ResourceGroupName $targetRgName -Name $vmName -Force -NoWait:$false | Out-Null
+        Write-Output "    VM stopped."
 
-[Screen: The Replicated item overview page highlighting the "Reprotect" button]
+        foreach ($disk in $disksToUpdate) {
+            Write-Output "    Converting disk $($disk.Name) to $TargetSku..."
+            $diskUpdateConfig = New-AzDiskUpdateConfig -SkuName $TargetSku
+            Update-AzDisk -ResourceGroupName $disk.ResourceGroupName -DiskName $disk.Name -DiskUpdate $diskUpdateConfig | Out-Null
+        }
 
-FinOps Action Required: Once the primary region is restored and you perform the planned failback to North Europe, the West Europe VM will be shut down and its disks will become passive replicas again. You must repeat the steps in Section 4 (Retrofitting Existing ASR Replicas) to downgrade these new West Europe passive disks from Premium SSD back to Standard HDD.
+        Write-Output "    Starting VM '$vmName'..."
+        Start-AzVM -ResourceGroupName $targetRgName -Name $vmName -NoWait:$false | Out-Null
+        Write-Output "    VM '$vmName' restarted with Premium SSDs!"
+    }
+}
 
-6.3. Post-Cleanup FinOps Verification
-Regardless of the failover type, the Production team should perform a final hygiene check to ensure no orphaned resources are generating unexpected costs.
-
-Navigate to the Target DR Resource Group (e.g., AEnPocRg-FinOps-asr).
-
-Filter the resources by Type == Disk.
-
-Verify that the only disks present are attached to the ASR replication engine and have a Storage SKU of Standard HDD.
-
-[Screen: The Resource Group filtered by Disks, showing only Standard HDDs remaining]
-
-If any unattached Premium SSDs remain from an aborted failover, manually delete them.
-
-This concludes the standard operating procedure. Your documentation now covers the entire lifecycle: from the architectural concept, to security prerequisites, runbook integration, retrofitting the existing footprint, running the drill, and cleaning up to secure the financial savings.
+Write-Output "========================================================="
+Write-Output "=== END OF SCRIPT ==="
+Write-Output "========================================================="
