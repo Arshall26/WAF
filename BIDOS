@@ -1,1 +1,17 @@
-https://techcommunity.microsoft.com/blog/azurenetworksecurityblog/addressing-php2shell-cve-2026-109618-and-cve-2026-109619-upgrade-guidance-and-az/4566623
+AzureDiagnostics
+| where Category == "ApplicationGatewayFirewallLog"
+| where hostname_s == "redmine.gefa-a.de"
+| where ruleGroup_s contains "Php"
+| project 
+    TimeGenerated,
+    Action = action_s,                 
+    ClientIP = clientIp_s,             
+    RequestURI = requestUri_s,        
+    RuleGroup = ruleGroup_s,           
+    RuleID = ruleId_s,                 
+    Message = Message,                 
+    MatchDetails = details_message_s,  
+    MatchData = details_data_s         
+| sort by TimeGenerated desc
+
+MAIS CA ME DONNE RIEN, mon chef me dit que le test a été fait entre 12h et 12h05 peut etre que ca été bloqué par une managed rule avant d'arriver à la custom ? ou bien juste donne moi tout les logs sur cette url entre 11h55 et 12h10 on va dire donne moi la commande KQL
