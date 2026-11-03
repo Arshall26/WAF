@@ -1,1 +1,4 @@
-Hi EL KILAU Hamza (BPCE-IT - EXT) I have one more question. In the coming days, we plan to perform penetration tests on git.gefa.de and redmine.gefa.de. The pentests will be performed from the IP range 83.236.211.16-32. The pentesters are asking if on our WAF are implemented rate limits. If so, we would like to disable the limits for this IP range during the period of the pentests.
+"Hello, I can confirm there are no rate limits implemented on our Azure WAF policies for git.gefa.de and redmine.gefa.de.
+
+However, please note that the WAF is in Prevention mode with strict managed rules (SQLi, XSS, RCE, etc.). If the goal of the pentest is to evaluate the backend application vulnerabilities rather than the WAF itself, your scanners will be blocked very quickly.
+Let me know if you need me to entirely whitelist your IP range (83.236.211.16 - 83.236.211.32) via a Custom Rule for the duration of the test."
