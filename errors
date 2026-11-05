@@ -1,36 +1,19 @@
-# ==========================================
-  # CUSTOM RULES : Virtual Patching PHP2Shell (CVE-2026-109618 / 109619)
-  # ==========================================
-  custom_rules {
-    name      = "BlockPhpSessionUploadProgress"
-    priority  = 90
-    rule_type = "MatchRule"
-    action    = "Block"
-    
-    # Condition 1 : Vérifie si le header Content-Type contient multipart/form-data
-    match_conditions {
-      match_variables {
-        variable_name = "RequestHeaders"
-        selector      = "Content-Type"
-      }
-      operator           = "Contains"
-      negation_condition = false
-      match_values       = [
-        "multipart/form-data"
-      ]
-      transforms         = ["Lowercase"]
-    }
+Subject: Security Decision Regarding External IP Whitelisting for Penetration Testing (git.gefa.de / redmine.gefa.de)
 
-    # Condition 2 : Vérifie si les arguments POST contiennent php_session_upload_progress
-    match_conditions {
-      match_variables {
-        variable_name = "PostArgs"
-      }
-      operator           = "Contains"
-      negation_condition = false
-      match_values       = [
-        "php_session_upload_progress"
-      ]
-      transforms         = ["Lowercase"]
-    }
-  }
+Dear GEFA Application Team,
+
+Following our recent communications, this email serves to formally summarize the security team's decision regarding the upcoming penetration tests scheduled for the git.gefa.de and redmine.gefa.de environments.
+
+We received your request to whitelist the external IP range (83.236.211.16/28) of your penetration testing provider on our Azure Web Application Firewall (WAF) policies. After a thorough review with the SSE Security Management, we must formally decline this request.
+
+In accordance with our strict security guidelines and perimeter defense strategies, we do not authorize the modification of our WAF configurations to bypass traffic from external scanners. Lowering our perimeter defenses, even temporarily, introduces unacceptable risks and violates our zero-trust principles. The WAF must remain fully operational in "Prevention" mode for all external traffic.
+
+Consequently, all authorized penetration testing must be initiated and conducted from the internal network. This approach ensures a secure testing environment while accurately assessing the backend applications without compromising our external security posture.
+
+Please coordinate with your service provider to provision the necessary internal access to proceed with the security assessments.
+
+Should you or the pentesters require further clarification regarding the internal testing prerequisites, our team remains available to discuss the next steps.
+
+Best regards,
+
+HamzaSSE Security Team (BPCE-IT)
