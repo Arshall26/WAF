@@ -1,68 +1,27 @@
-param(
-    [Parameter(Mandatory=$false)]
-    [string]$TargetResourceGroup = ""
-)
+STUDY AZURE SMART TIERING
+On a regardé toutes LES VMS DE PROD ET LEUR VITESSE DECRITURE DE DISKS TT CELLE AU DESSUS DU SEUIL MAX POUR DU HDD (8Mo/S) on exclu voici la liste des applis exempté :
+	• OMEGA
+	• EVEREST
+	• LOG MGMT
+	• TFS
+	• SAPP4SCOMPUTE
+	• DIP
+	• XACT
+	• SENTINEL
+	• PROPHET
+	• FORPLAN
+	• ELEMENTS
+	• JENKINS
+	• DMS
+	• SAS
+	• HELIOSLA
+	• TABLEAU
 
-$ErrorActionPreference = "Continue"
-Write-Output "========================================================="
-Write-Output "=== ASR FinOps Smart Tiering - Manual Failback to HDD ==="
-Write-Output "========================================================="
+Sachant que l'on a pris le max ce qui peut etre considéré comme la borne superierue de securité car des fois c'est des pics et on peut ne pas les prendre en compte en prenant la moyenne la liste est bcp plus courte. Mais voila il faudra notifier cette remarque
 
-$TargetSku = "Standard_LRS"
+La liste d'app exempté reprensente 327641 GiB en disk size total sur 1049577 GiB ce qui represente (31%) que l'on ne touche dans une situation où on privilegie au maximum la sécurité operationnel en prenant leur pic d'ecriture en compte
 
-Write-Output "-> Connecting to Azure..."
-Disable-AzContextAutosave -Scope Process | Out-Null
-Connect-AzAccount -Identity | Out-Null
+Ce qui nous reste 721936 GiB de disk en PREMIUM SSD
+ Ce qui coute aujourd'hui X (à toi de me dire) et que l'on pourrait transformer en HDD coté ASR en HDD et ce qui couterait Y avec ZW% d'economies 
 
-# Détermination des RGs à cibler
-$rgsToProcess = @()
-
-if ([string]::IsNullOrWhiteSpace($TargetResourceGroup)) {
-    Write-Output "-> No specific Resource Group provided. Scanning subscription for DR Resource Groups (*-asr)..."
-    $rgsToProcess = Get-AzResourceGroup | Where-Object { $_.ResourceGroupName -match "-asr$" }
-} else {
-    Write-Output "-> Targeted execution on Resource Group: $TargetResourceGroup"
-    $rgsToProcess = Get-AzResourceGroup -Name $TargetResourceGroup -ErrorAction SilentlyContinue
-}
-
-if ($null -eq $rgsToProcess -or $rgsToProcess.Count -eq 0) {
-    Write-Output "    [Skip] No valid Resource Groups found ending with '-asr'. Exiting."
-    exit
-}
-
-foreach ($rg in $rgsToProcess) {
-    $rgName = $rg.ResourceGroupName
-    Write-Output "------------------------------------------------"
-    Write-Output "-> Processing Target RG: $rgName"
-    
-    # Sécurité absolue : Ciblage exclusif des disques passifs ASR non attachés
-    $replicaDisks = Get-AzDisk -ResourceGroupName $rgName | Where-Object { $_.Name -like "*-ASRReplica" -and $_.DiskState -ne "Attached" }
-    
-    if ($null -eq $replicaDisks -or $replicaDisks.Count -eq 0) {
-        Write-Output "    [Skip] No passive ASR replica disks found in $rgName."
-        continue
-    }
-
-    foreach ($disk in $replicaDisks) {
-        if ($disk.Sku.Name -ne $TargetSku) {
-            Write-Output "    Converting replica disk $($disk.Name) to $TargetSku..."
-            
-            # Révocation du verrou SAS si ASR a déjà commencé la synchronisation
-            if ($disk.DiskState -eq "ActiveSAS") {
-                Write-Output "    Revoking active SAS lock on $($disk.Name)..."
-                Revoke-AzDiskAccess -ResourceGroupName $rgName -DiskName $disk.Name | Out-Null
-                Start-Sleep -Seconds 10
-            }
-
-            $diskUpdateConfig = New-AzDiskUpdateConfig -SkuName $TargetSku
-            Update-AzDisk -ResourceGroupName $rgName -DiskName $disk.Name -DiskUpdate $diskUpdateConfig | Out-Null
-            Write-Output "    Disk $($disk.Name) successfully downgraded to Standard HDD."
-        } else {
-            Write-Output "    Disk $($disk.Name) is already $TargetSku."
-        }
-    }
-}
-
-Write-Output "========================================================="
-Write-Output "=== END OF SCRIPT ==="
-Write-Output "========================================================="
+D'abord verifie mon raisonnement sur l'etude d'economie possible avec le smart tiering des disk azure, ensuite trouve moi le X, le Y et le ZW, et enfin tu me draft un mail recap à envoyer à mon manager lui expliquant tout ca
