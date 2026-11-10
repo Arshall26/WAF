@@ -1,13 +1,1 @@
-Name	Expiration date	Purchase date	Term	Product name	Region	Quantity
-Disk_RI_04-01-2024_09-21	2027-04-01T08:28:51.0742653Z	2026-04-01T08:26:59.0604407Z	P1Y	premium_ssd_managed_disks_p30	westeurope	2
-Disk_RI_04-01-2024_09-24_renewed	2027-04-01T08:30:53.3820801Z	2026-04-01T08:29:03.9291798Z	P1Y	premium_ssd_managed_disks_p30	northeurope	4
-Disk_RI_04-10-2024_11-20_renewed	2027-04-10T10:35:55.0294407Z	2026-04-10T10:31:58.2040280Z	P1Y	premium_ssd_managed_disks_p30	centralus	9
-Disk_RI_04-10-2024_11-17_renewed	2027-04-10T10:34:03.3381056Z	2026-04-10T10:31:58.2473045Z	P1Y	premium_ssd_managed_disks_p60	brazilsouth	1
-Disk_RI_04-10-2024_11-21_renewed	2027-04-10T10:34:01.5766666Z	2026-04-10T10:32:02.1814136Z	P1Y	premium_ssd_managed_disks_p60	eastus2	1
-Disk_RI_04-10-2024_11-21_renewed	2027-04-10T11:32:38.8535548Z	2026-04-10T11:31:38.2525556Z	P1Y	premium_ssd_managed_disks_p30	eastus2	15
-Disk_RI_04-10-2024_11-22_renewed	2027-04-10T11:32:52.0429807Z	2026-04-10T11:31:57.1950675Z	P1Y	premium_ssd_managed_disks_p40	northeurope	22
-Disk_RI_04-10-2024_11-23_renewed	2027-04-10T11:32:58.2195552Z	2026-04-10T11:32:03.0794159Z	P1Y	premium_ssd_managed_disks_p50	northeurope	21
-Disk_RI_04-10-2024_11-18_renewed	2027-04-10T11:33:03.0475801Z	2026-04-10T11:32:02.0282153Z	P1Y	premium_ssd_managed_disks_p60	brazilsoutheast	1
-Disk_RI_04-10-2024_11-22_renewed	2027-04-10T11:36:23.7151972Z	2026-04-10T11:35:15.7893006Z	P1Y	premium_ssd_managed_disks_p30	northeurope	41
-
-On a ces quantité aussi de disks manager premium ssd de reservé donc il faut pas oublier cette partie ajuste l'etude et le ROI par rapport à ca
+Although a portion of our Premium SSDs are currently covered by active 1-year reservations, the net savings remain highly significant; downgrading these replicas will free up those reservations to automatically float and cover our active production workloads, eliminating pay-as-you-go waste elsewhere.
