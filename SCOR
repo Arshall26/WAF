@@ -1,32 +1,13 @@
-Subject: Feasibility Study & ROI - ASR Smart Tiering Deployment (Replication Cost Optimization)
+Name	Expiration date	Purchase date	Term	Product name	Region	Quantity
+Disk_RI_04-01-2024_09-21	2027-04-01T08:28:51.0742653Z	2026-04-01T08:26:59.0604407Z	P1Y	premium_ssd_managed_disks_p30	westeurope	2
+Disk_RI_04-01-2024_09-24_renewed	2027-04-01T08:30:53.3820801Z	2026-04-01T08:29:03.9291798Z	P1Y	premium_ssd_managed_disks_p30	northeurope	4
+Disk_RI_04-10-2024_11-20_renewed	2027-04-10T10:35:55.0294407Z	2026-04-10T10:31:58.2040280Z	P1Y	premium_ssd_managed_disks_p30	centralus	9
+Disk_RI_04-10-2024_11-17_renewed	2027-04-10T10:34:03.3381056Z	2026-04-10T10:31:58.2473045Z	P1Y	premium_ssd_managed_disks_p60	brazilsouth	1
+Disk_RI_04-10-2024_11-21_renewed	2027-04-10T10:34:01.5766666Z	2026-04-10T10:32:02.1814136Z	P1Y	premium_ssd_managed_disks_p60	eastus2	1
+Disk_RI_04-10-2024_11-21_renewed	2027-04-10T11:32:38.8535548Z	2026-04-10T11:31:38.2525556Z	P1Y	premium_ssd_managed_disks_p30	eastus2	15
+Disk_RI_04-10-2024_11-22_renewed	2027-04-10T11:32:52.0429807Z	2026-04-10T11:31:57.1950675Z	P1Y	premium_ssd_managed_disks_p40	northeurope	22
+Disk_RI_04-10-2024_11-23_renewed	2027-04-10T11:32:58.2195552Z	2026-04-10T11:32:03.0794159Z	P1Y	premium_ssd_managed_disks_p50	northeurope	21
+Disk_RI_04-10-2024_11-18_renewed	2027-04-10T11:33:03.0475801Z	2026-04-10T11:32:02.0282153Z	P1Y	premium_ssd_managed_disks_p60	brazilsoutheast	1
+Disk_RI_04-10-2024_11-22_renewed	2027-04-10T11:36:23.7151972Z	2026-04-10T11:35:15.7893006Z	P1Y	premium_ssd_managed_disks_p30	northeurope	41
 
-Hi [Manager's Name],
-
-Following the technical validation of our Azure Site Recovery (ASR) "Smart Tiering" architecture, I have finalized the financial and technical impact study on our production environments.
-
-Using our metric extraction script across all subscriptions, we mapped the write speeds (MB/s) of all protected VMs. To guarantee absolute operational safety and avoid any risks to our RPO/RTO SLAs, I based the analysis on maximum write peaks rather than smoothed averages.
-
-Since the technical limit for ASR on Standard HDD storage is 8 MB/s per VM, we have formally excluded applications exceeding this threshold (e.g., OMEGA, EVEREST, LOG MGMT, SAPP4SCOMPUTE, etc.).
-
-Here is the breakdown of the analysis:
-
-Secured Scope (Excluded from Smart Tiering): 327,641 GiB (31% of our total volume). These disks will remain on Premium SSD to safely absorb their peak write loads without risking replication desynchronization.
-
-Eligible Scope (Smart Tiering Candidates): 721,936 GiB. These disks operate well below the critical 8 MB/s threshold and are currently running on dormant Premium SSDs.
-
-Financial Impact (ROI):
-
-The current cost of this eligible scope on Premium SSD is approximately €90,200 / month.
-
-By downgrading these passive replicas to Standard HDD via our automation, the cost will drop to approximately €30,300 / month.
-
-This optimization represents a net saving of ~€60,000 per month (over €700,000 per year), translating to a 66% reduction in storage costs for this scope.
-
-The Failover and Failback Runbooks, along with the Standard Operating Procedure (SOP), are now finalized. They are secured with strict filters to ensure there is zero impact on active VMs.
-
-Let me know when you are available to review these figures or if we can start planning the first retrofit windows for a subset of resources.
-
-Best regards,
-
-Hamza
-Cloud Architect & FinOps Engineer
+On a ces quantité aussi de disks manager premium ssd de reservé donc il faut pas oublier cette partie ajuste l'etude et le ROI par rapport à ca
