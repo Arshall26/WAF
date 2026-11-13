@@ -1,1 +1,38 @@
-Although a portion of our Premium SSDs are currently covered by active 1-year reservations, the net savings remain highly significant; downgrading these replicas will free up those reservations to automatically float and cover our active production workloads, eliminating pay-as-you-go waste elsewhere.
+sur la partie prequesitite de la doc que l'on a rédigé : Mon manager m'a fait plusieurs remarques que je te mets entre []
+
+VI.II.	Prerequisites & Security Setup
+To automate the disk SKU conversion without storing credentials, we utilize an Azure Automation Account leveraging a System Assigned Managed Identity.
+Critical Architectural Rule: The Automation Account must be deployed in the exact same Subscription as the ASR Recovery Services Vault, and physically located in a DR Region (e.g., West Europe). If not, ASR will not natively see the runbook.
+Automation Account
+In the Azure Portal search bar, type Automation Accounts and select the service.
+Click + Create and fill in the Basics tab:
+Subscription: Must match your ASR Recovery Services Vault subscription.
+Resource Group: Create a dedicated RG (if not existent in the subscription) e.g. AEaewPprdRrg-ASRAutomation.
+Region: West Europe (DR target region).
+Automation Account: Name must be AEwPrdAu-ASRAutomation (adapt naming to the region as per SCOR Cloud Naming Convention)
+ 
+
+
+Click Next: Advanced.
+Under Identity, ensure System assigned is checked (ON). This is mandatory for secure authentication.
+ 
+Click Next: Networking.
+Select Public access (required for the runbook to reach the Azure Resource Manager API ).[la il m'a dit it should be private access est ce que c'est possible ca ?]
+Select Private access
+ 
+Click Review + Create, then Create.
+RBAC / Permissions
+The newly created Managed Identity needs the authority to power off VMs and change disk SKUs specifically within the DR target environment.
+Navigate to your Target DR Resource Group (the resource group where the ASR failover VMs and passive replica disks reside). [là il a dit We should provide this right on the whole subscription, not RG by RG possible ca ?]
+In the left-hand menu, select Access control (IAM).
+ 
+Click + Add > Add role assignment.
+ 
+In the Role tab, search for and select Virtual Machine Contributor  (more specific) or Contributor. Click Next. [là il est pas daccord avec le vm contributor donne moi l'exact custom role suffisant à faire ca]
+
+In the Members tab:
+Choose Assign access to: Managed identity.
+
+Click + Select members.
+
+In the side panel, select your subscription, choose Automation Account from the Managed identity dropdown, and click on the Automation Account you just created.
