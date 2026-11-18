@@ -1,5 +1,20 @@
-les 9 apply sur 10 sont passées sauf une :
-Error: creating Application Gateway Web Application Firewall Policy (Subscription: "d12989f0-afeb-4232-bcca-9965b4570d87" Resource Group Name: "azr-rg-bit-bes-sas-in-prd" Application Gateway Web Application Firewall Policy Name: "smartbalancesheet.sgmarkets.com"): unexpected status 400 (400 Bad Request) with error: ApplicationGatewayFirewallUnknownRuleOverride: The override Rule '100300' is unknown for RuleGroup 'BadBots' for Application Gateway Firewall in context ''.
-with azurerm_web_application_firewall_policy.smartbalancesheet_sgmarkets_com
-on waf_smartbalancesheet_sgmarkets.tf line 9, in resource "azurerm_web_application_firewall_policy" "smartbalancesheet_sgmarkets_com":
-resource "azurerm_web_application_firewall_policy" "smartbalancesheet_sgmarkets_com" {
+j'ai remarqué un truc recemment sur mes plan terraform j'ai toujours un delete tags sur mes policy partout, je soupconne une autre équipe ayant rajouté des tags sur mes policy waf sans me prevenir et ducoup à chaque run j'ai un change sur toutes les policy systematiquement : 
+
+tags : 
+delete
+bu :
+"dtr"
+delete
+cia :
+"biinc"
+delete
+description :
+"Resource group for infra"
+delete
+entity :
+"bit"
+delete
+env :
+"prd"
+
+comment je les integre dans mon code une bonne fois pour toutes donne moi le bloc de code propre et où le mettre, prend comme exemple le dernier .tf que je t'ai transmis
