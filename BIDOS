@@ -1,33 +1,26 @@
-# Fichier : waf_smartbalancesheet_dev_sgmarkets.tf
+2. Le Modèle de Sécurité : Global vs Per-Site (URL)
 
-import {
-  to = azurerm_web_application_firewall_policy.smartbalancesheet_dev_sgmarkets_com
-  id = "/subscriptions/d12989f0-afeb-4232-bcca-9965b4570d87/resourceGroups/${var.rg_name}/providers/Microsoft.Network/applicationGatewayWebApplicationFirewallPolicies/smartbalancesheet-dev.sgmarkets.com"
-}
+Pour allier une protection par défaut sans faille et une flexibilité maximale par application, nous utilisons le système d'héritage natif d'Azure WAF à deux niveaux.
 
-resource "azurerm_web_application_firewall_policy" "smartbalancesheet_dev_sgmarkets_com" {
-  name                = "smartbalancesheet-dev.sgmarkets.com"
-  resource_group_name = var.rg_name
-  location            = var.location
+Règle d'architecture fondamentale : Le niveau le plus spécifique (Per-Site) écrase toujours le niveau global.
 
-  # ==========================================
-  # TAGS GOUVERNANCE
-  # ==========================================
-  tags = {
-    bu          = "dtr"
-    cia         = "biinc"
-    description = "Resource group for infra"
-    entity      = "bit"
-    env         = "prd"
-  }
+Niveau 1 : WAF Policy Globale (Le Filet de Sécurité)
+Cible : Attachée directement au niveau de l'Application Gateway.
+Rôle : Agit comme un "Catch-all". Si une nouvelle application (Listener) est ajoutée sur la Gateway sans que la sécurité ne soit configurée, elle hérite automatiquement de ces règles OWASP de base. Cela garantit qu'aucune application n'est exposée nue sur internet.
 
-  policy_settings {
-    enabled                          = true
-    mode                             = "Prevention"
-    request_body_check               = true
-    max_request_body_size_in_kb      = 1024
-    file_upload_limit_in_mb          = 100
-    request_body_inspect_limit_in_kb = 1024
-  }
+Niveau 2 : WAF Policies "Per-Site" (Le Sur-Mesure par URL)
+Cible : Attachée au niveau du Listener (URL spécifique de l'application, ex: one-ppr.equipmentsolutions.groupebpce.com).
+Rôle : C'est le cœur de notre stratégie de sécurité. Cette policy prend le dessus sur la policy globale. Elle nous permet d'appliquer un paramétrage granulaire, de créer des exclusions chirurgicales pour éviter les faux positifs, et de gérer le passage en mode "Prévention" de manière isolée sans impacter les autres applications hébergées sur la même Gateway.
 
-  # ... (la suite du code reste identique) ...
+3. La Chaine de Liaison d'Automatisation (TFE)
+Pour gérer cette architecture multi-souscriptions sans dupliquer nos efforts et garantir une configuration reproductible, notre usine logicielle s'appuie sur Terraform :
+
+Code Source Unique (Bitbucket) : Un seul dépôt Git contenant le code Terraform (HCL) générique qui décrit la structure de nos WAF Policies.
+
+Exécution isolée (Terraform Enterprise) : La séparation des environnements se fait au niveau des Workspaces TFE, qui injectent dynamiquement le contexte cible :
+
+Workspace SGEF ➔ Connecté à la souscription SGEF (injecte location = "northeurope" et le RG correspondant).
+Workspace GEFA ➔ Connecté à la souscription GEFA (injecte location = "germanywestcentral" et le RG correspondant).
+
+Cette architecture en étoile nous permet de déployer de nouvelles politiques WAF en un seul Run Terraform, de manière industrielle et homogène, sur n'importe lequel de nos périmètres.
+
