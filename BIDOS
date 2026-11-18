@@ -1,20 +1,33 @@
-j'ai remarqué un truc recemment sur mes plan terraform j'ai toujours un delete tags sur mes policy partout, je soupconne une autre équipe ayant rajouté des tags sur mes policy waf sans me prevenir et ducoup à chaque run j'ai un change sur toutes les policy systematiquement : 
+# Fichier : waf_smartbalancesheet_dev_sgmarkets.tf
 
-tags : 
-delete
-bu :
-"dtr"
-delete
-cia :
-"biinc"
-delete
-description :
-"Resource group for infra"
-delete
-entity :
-"bit"
-delete
-env :
-"prd"
+import {
+  to = azurerm_web_application_firewall_policy.smartbalancesheet_dev_sgmarkets_com
+  id = "/subscriptions/d12989f0-afeb-4232-bcca-9965b4570d87/resourceGroups/${var.rg_name}/providers/Microsoft.Network/applicationGatewayWebApplicationFirewallPolicies/smartbalancesheet-dev.sgmarkets.com"
+}
 
-comment je les integre dans mon code une bonne fois pour toutes donne moi le bloc de code propre et où le mettre, prend comme exemple le dernier .tf que je t'ai transmis
+resource "azurerm_web_application_firewall_policy" "smartbalancesheet_dev_sgmarkets_com" {
+  name                = "smartbalancesheet-dev.sgmarkets.com"
+  resource_group_name = var.rg_name
+  location            = var.location
+
+  # ==========================================
+  # TAGS GOUVERNANCE
+  # ==========================================
+  tags = {
+    bu          = "dtr"
+    cia         = "biinc"
+    description = "Resource group for infra"
+    entity      = "bit"
+    env         = "prd"
+  }
+
+  policy_settings {
+    enabled                          = true
+    mode                             = "Prevention"
+    request_body_check               = true
+    max_request_body_size_in_kb      = 1024
+    file_upload_limit_in_mb          = 100
+    request_body_inspect_limit_in_kb = 1024
+  }
+
+  # ... (la suite du code reste identique) ...
