@@ -1,23 +1,258 @@
-C:\Users\U019971\SCOR\Technical Architecture - FinOps\VM Rightsizing\automated_process\Build_CPU_analysis_report\2026\November>python build_scor_master.py --vm-xlsx AzureVirtualMachines1119.xlsx --vm-sheet AzureVirtualMachines1119 --reserved-xlsx reservedInstances1119.xlsx --out-xlsx SCOR_Master_Output1119.xlsx
-Traceback (most recent call last):
-  File "C:\Users\U019971\SCOR\Technical Architecture - FinOps\VM Rightsizing\automated_process\Build_CPU_analysis_report\2026\November\build_scor_master.py", line 256, in <module>
-    main()
-  File "C:\Users\U019971\SCOR\Technical Architecture - FinOps\VM Rightsizing\automated_process\Build_CPU_analysis_report\2026\November\build_scor_master.py", line 245, in main
-    df_res[['Product name','SIZE','GROUP','Qty','vCPU','CPU','Region','RegionLabel','Expiration date','ExpYear']].to_excel(
-  File "C:\Users\U019971\.pyenv\pyenv-win\versions\3.11.9\Lib\site-packages\pandas\util\_decorators.py", line 333, in wrapper
-    return func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\U019971\.pyenv\pyenv-win\versions\3.11.9\Lib\site-packages\pandas\core\generic.py", line 2439, in to_excel
-    formatter.write(
-  File "C:\Users\U019971\.pyenv\pyenv-win\versions\3.11.9\Lib\site-packages\pandas\io\formats\excel.py", line 952, in write
-    writer._write_cells(
-  File "C:\Users\U019971\.pyenv\pyenv-win\versions\3.11.9\Lib\site-packages\pandas\io\excel\_openpyxl.py", line 486, in _write_cells
-    for cell in cells:
-  File "C:\Users\U019971\.pyenv\pyenv-win\versions\3.11.9\Lib\site-packages\pandas\io\formats\excel.py", line 890, in get_formatted_cells
-    cell.val = self._format_value(cell.val)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\U019971\.pyenv\pyenv-win\versions\3.11.9\Lib\site-packages\pandas\io\formats\excel.py", line 607, in _format_value
-    raise ValueError(
-ValueError: Excel does not support datetimes with timezones. Please ensure that datetimes are timezone unaware before writing to Excel.
+voici le code entier : dis moi juste la ligne à modifier pour dire si jamais on a une date bizarre faire ca au lieu de ca :
 
-c'est quoi le souci ? explique moi stp
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+SCOR – Master Builder (VM CPU by Big Family + Reserved by Expiration Year)
+
+Usage (defaults work if files are in the same folder):
+ python build_scor_master.py \
+  --vm-xlsx 1.xlsx \
+  --vm-sheet AzureVirtualMachines \
+  --reserved-xlsx reservedInstances.xlsx \
+  --out-xlsx SCOR_Master_Output.xlsx
+
+Note (2025-11-13):
+- vCPU parser updated: for "constrained" SKUs like E64-16s_v3 / E4-2ds_v5,
+  we now take the number **before** the dash (64 / 4), not after.
+"""
+
+import argparse
+import pandas as pd
+import re
+
+# ---------- Constantes communnes ----------
+REGION_COLS = [
+    'Australia East','Brazil South','Brazil Southeast','Central India','Central US','East US 2',
+    'France Central','Korea Central','Korea South','North Europe','South Africa North','South India',
+    'Southeast Asia','UK South','UK West','West Europe'
+]
+
+SIZE_ORDER = [
+    'OTHER','Dasv4','Dasv5','Ddsv4','Ddsv5','Dsv3','Dsv4','Dsv5','Eadsv5','Easv4','Easv5',
+    'Edsv4','Edsv5','Esv3','Esv4','Esv5','Fsv2',
+    'Standard_DS13_v2','Standard_DS1_v2','Standard_DS2_v2','Standard_L32s_v2','Standard_M192is_v2',
+    'Standard_M208s_v2','Standard_M64ds_v2','Standard_M64ls','Standard_M64s_v2'
+]
+
+KEEP_SKUS = {
+    'Standard_DS13_v2','Standard_DS1_v2','Standard_DS2_v2',
+    'Standard_L32s_v2','Standard_M192is_v2','Standard_M208s_v2',
+    'Standard_M64ds_v2','Standard_M64ls','Standard_M64s_v2'
+}
+
+# Souscriptions PROD (ENV = PRD si présent dans cet ensemble)
+PROD_SUBS = {
+    'DXC-Gold-Prd-Mgmt','SCOR-Gold-Prd-Core','SCOR-Silver-PRD','SCOR AZURE INFRASTRUCTURE',
+    'SOLEM-Prod','SCOR-Gold-Prd-SGL','SCOR-Gold-Prd-CRO','SCOR-Gold-Prd-SGI','SCOR-Prd-SDS'
+}
+
+# Mapping région (reserved export -> friendly label)
+REGION_MAP = {
+    'australiaeast':'Australia East','brazilsouth':'Brazil South','brazilsoutheast':'Brazil Southeast',
+    'centralindia':'Central India','centralus':'Central US','eastus2':'East US 2','francecentral':'France Central',
+    'koreacentral':'Korea Central','koreasouth':'Korea South','northeurope':'North Europe',
+    'southafricanorth':'South Africa North','southindia':'South India','southeastasia':'Southeast Asia',
+    'uksouth':'UK South','ukwest':'UK West','westeurope':'West Europe',
+}
+
+# vCPU parser (générique + exceptions DS/D v2/v3)
+# IMPORTANT: Pour les SKU "constrained" (ex. E64-16s_v3, E4-2ds_v5), on prend désormais
+# le nombre AVANT le tiret -> 64 / 4, etc.
+SPECIAL = {
+    'DS11_V2':2,'DS12_V2':4,'DS13_V2':8,'DS14_V2':16,'DS15_V2':20,
+    'D11_V2':2,'D12_V2':4,'D13_V2':8,'D14_V2':16,'D15_V2':20,
+    'DS11':2,'DS12':4,'DS13':8,'DS14':16,'DS15':20,
+    'DS12_V3':4,'DS13_V3':8,'DS14_V3':16
+}
+NUM_RE = re.compile(r'(\d+)(?:\-(\d+))?')
+VER_RE = re.compile(r'_V(\d+)$', re.IGNORECASE)
+SUFFIXES = ['ADS','AS','DS','S']  # priorité
+
+def norm_size_key(s: str) -> str:
+    return str(s).upper().replace('STANDARD_', '').replace(' ', '')
+
+def vcpus(size_raw: str) -> int:
+    """
+    Retourne le vCPU d'un SKU.
+    - Exceptions D/DS v2/v3 via SPECIAL
+    - Cas "constrained" (E64-16..., E4-2...): on prend le nombre AVANT le tiret (64, 4, ...)
+    - Sinon: premier groupe numérique trouvé
+    """
+    key = norm_size_key(size_raw)
+    if key in SPECIAL:
+        return SPECIAL[key]
+    m = NUM_RE.search(key)
+    # CHANGEMENT: on retourne TOUJOURS le premier groupe (avant le '-')
+    return int(m.group(1)) if m else 0
+
+def big_family(size: str) -> str:
+    s = str(size).strip()
+    if s in KEEP_SKUS:
+        return s
+    k = norm_size_key(s)
+    m = VER_RE.search(k)
+    if not m:
+        return 'OTHER'
+    ver = int(m.group(1))
+    base = k[:m.start()]
+    if not base:
+        return 'OTHER'
+    fam = base[0]  # D/E/F/…
+    suf = next((x for x in SUFFIXES if base.endswith(x)), None)
+    if suf is None:
+        return 'OTHER'
+    if fam == 'D':
+        if suf == 'AS' and ver in (4,5): return f'Dasv{ver}'
+        if suf == 'DS' and ver in (4,5): return f'Ddsv{ver}'
+        if suf == 'S' and ver in (3,4,5): return f'Dsv{ver}'
+    elif fam == 'E':
+        if suf == 'ADS' and ver == 5: return 'Eadsv5'
+        if suf == 'AS' and ver in (4,5): return f'Easv{ver}'
+        if suf == 'DS' and ver in (4,5): return f'Edsv{ver}'
+        if suf == 'S' and ver in (3,4,5): return f'Esv{ver}'
+    elif fam == 'F':
+        if suf == 'S' and ver == 2: return 'Fsv2'
+    return 'OTHER'
+
+# ---------- VM PIPELINE ----------
+def load_vm_sheet(vm_xlsx: str, vm_sheet: str | None) -> pd.DataFrame:
+    xl = pd.ExcelFile(vm_xlsx, engine='openpyxl')
+    sheet_to_use = vm_sheet
+    # auto-détection si besoin
+    if sheet_to_use is None:
+        candidates = ['AzureVirtualMachines', 'AzureVirtualMachines_filtered']
+        sheet_to_use = next((s for s in candidates if s in xl.sheet_names), xl.sheet_names[0])
+    df = xl.parse(sheet_to_use)
+    return df
+
+def filter_and_enrich_vms(df: pd.DataFrame) -> pd.DataFrame:
+    d = df.copy()
+    # Filtres
+    d = d[~d['NAME'].astype(str).str.upper().str.startswith('AVD')]
+    d = d[~(d['RESOURCE GROUP'].astype(str).str.strip().str.lower() == 'aenprdrg-prophet')]
+    # vCPU par VM
+    d['CPU'] = d['SIZE'].astype(str).apply(vcpus)
+    # ENV
+    d['ENV'] = d['SUBSCRIPTION'].astype(str).str.strip().apply(lambda s: 'PRD' if s in PROD_SUBS else 'NONPRD')
+    # BIG_FAMILY
+    d['BIG_FAMILY'] = d['SIZE'].astype(str).apply(big_family)
+    return d
+
+def build_vm_summary_tables(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    regions = REGION_COLS[:]  # ordre fixe
+    groups = SIZE_ORDER[:]    # ordre fixe
+    def summary_for_env(env: str) -> pd.DataFrame:
+        sub = df[df['ENV'] == env]
+        pt = sub.pivot_table(index='BIG_FAMILY', columns='LOCATION', values='CPU', aggfunc='sum', fill_value=0)
+        for r in regions:
+            if r not in pt.columns:
+                pt[r] = 0
+        pt = pt[regions].reindex(groups, fill_value=0)
+        out = pt.copy()
+        out.insert(0, 'SIZE', out.index)  # 1ère colonne = SIZE
+        out.columns = ['SIZE'] + [f'Total CPU {r}' for r in regions]
+        return out.reset_index(drop=True)
+    return summary_for_env('PRD'), summary_for_env('NONPRD')
+
+def build_fact_vm(df: pd.DataFrame) -> pd.DataFrame:
+    # Table de faits longue : SIZE | ENV | Region | TotalCPU | CPU (vCPU/VM)
+    fact = df.groupby(['BIG_FAMILY','ENV','LOCATION'], as_index=False)['CPU'].sum()
+    fact = fact.rename(columns={'BIG_FAMILY':'SIZE','LOCATION':'Region','CPU':'TotalCPU'})
+    # CPU (vCPU/VM) par BIG_FAMILY non défini (familles mélangent plusieurs SKU) -> 0
+    fact['CPU'] = 0
+    return fact[['SIZE','CPU','ENV','Region','TotalCPU']]
+
+# ---------- RESERVED PIPELINE ----------
+def load_reserved(reserved_xlsx: str) -> pd.DataFrame:
+    xl = pd.ExcelFile(reserved_xlsx, engine='openpyxl')
+    d = xl.parse(xl.sheet_names[0])
+    d.columns = [c.strip() for c in d.columns]
+    # Colonnes minimales obligatoires
+    required = {'Product name','Quantity','Expiration date','Region'}
+    missing = required - set(d.columns)
+    if missing:
+        raise ValueError(f"Colonnes manquantes dans {reserved_xlsx}: {missing}")
+    return d[['Product name','Quantity','Expiration date','Region']].copy()
+
+def transform_reserved(d: pd.DataFrame) -> pd.DataFrame:
+    r = d.copy()
+    r['SIZE'] = r['Product name'].astype(str).str.strip()
+    r['GROUP'] = r['SIZE'].apply(big_family)
+    r['vCPU'] = r['SIZE'].apply(vcpus)  # utilise le même parseur (constrained -> nombre avant '-')
+    r['Qty'] = pd.to_numeric(r['Quantity'], errors='coerce').fillna(0).astype(int)
+    r['CPU'] = r['vCPU'] * r['Qty']
+    r['Expiration date'] = pd.to_datetime(r['Expiration date'], errors='coerce')
+    r['ExpYear'] = r['Expiration date'].dt.year
+    r['RegionLabel'] = r['Region'].astype(str).str.strip().str.lower().map(REGION_MAP)
+    return r
+
+def build_reserved_sheets(r: pd.DataFrame) -> tuple[dict, pd.DataFrame]:
+    years = sorted(r['ExpYear'].dropna().unique().tolist())
+    regions = REGION_COLS
+    groups = SIZE_ORDER
+    def sheet_for_year(year: int) -> pd.DataFrame:
+        d = r[r['ExpYear'] == year]
+        pt = d.pivot_table(index='GROUP', columns='RegionLabel', values='CPU', aggfunc='sum', fill_value=0)
+        for rc in regions:
+            if rc not in pt.columns:
+                pt[rc] = 0
+        pt = pt[regions].reindex(groups, fill_value=0)
+        out = pt.copy()
+        out.insert(0, 'SIZE', out.index)
+        out.columns = ['SIZE'] + [f'Total CPU {rc}' for rc in regions]
+        return out.reset_index(drop=True)
+    sheets = {f'CPU_Reserved_{int(y)}': sheet_for_year(int(y)) for y in years}
+    # Fact table (long) pour réservations
+    fact = r.dropna(subset=['RegionLabel', 'ExpYear']).groupby(['GROUP','RegionLabel','ExpYear'], as_index=False)['CPU'].sum()
+    fact = fact.rename(columns={'GROUP':'SIZE','RegionLabel':'Region','CPU':'TotalCPU'})
+    return sheets, fact[['SIZE','Region','ExpYear','TotalCPU']]
+
+# ---------- MAIN ----------
+def main():
+    ap = argparse.ArgumentParser(description='SCOR Master Builder')
+    ap.add_argument('--vm-xlsx', default='1.xlsx')
+    ap.add_argument('--vm-sheet', default=None)
+    ap.add_argument('--reserved-xlsx', default='reservedInstances.xlsx')
+    ap.add_argument('--out-xlsx', default='SCOR_Master_Output.xlsx')
+    args = ap.parse_args()
+
+    # 1) VMs → PRD/NONPRD
+    df_vm_raw = load_vm_sheet(args.vm_xlsx, args.vm_sheet)
+    df_vm = filter_and_enrich_vms(df_vm_raw)
+    prd_tbl, nonprd_tbl = build_vm_summary_tables(df_vm)
+    fact_vm = build_fact_vm(df_vm)
+
+    # 2) Reserved → par année
+    df_res_raw = load_reserved(args.reserved_xlsx)
+    df_res = transform_reserved(df_res_raw)
+    reserved_sheets, fact_res = build_reserved_sheets(df_res)
+
+    # 3) Export Excel unifié
+    with pd.ExcelWriter(args.out_xlsx, engine='openpyxl') as wr:
+        prd_tbl.to_excel(wr, sheet_name='CPU_By_BigFam_Region_PRD', index=False)
+        nonprd_tbl.to_excel(wr, sheet_name='CPU_By_BigFam_Region_NonPrd', index=False)
+
+        # Conserver la feuille VM d'origine telle quelle + mapping ligne à ligne
+        df_vm_raw.to_excel(wr, sheet_name='AzureVirtualMachines_filtered', index=False)
+        df_vm[['NAME','SUBSCRIPTION','RESOURCE GROUP','LOCATION','SIZE','CPU','ENV','BIG_FAMILY']].to_excel(
+            wr, sheet_name='RowLevel_With_Family', index=False
+        )
+
+        # Réservations par année
+        for name, dfy in reserved_sheets.items():
+            dfy.to_excel(wr, sheet_name=name, index=False)
+
+        # Trace réservations
+        df_res[['Product name','SIZE','GROUP','Qty','vCPU','CPU','Region','RegionLabel','Expiration date','ExpYear']].to_excel(
+            wr, sheet_name='Reserved_Raw_Parsed', index=False
+        )
+
+        # Tables de faits (long format)
+        fact_vm.to_excel(wr, sheet_name='FactCPUSKU', index=False)
+        fact_res.to_excel(wr, sheet_name='FactReservations', index=False)
+
+    print('OK ->', args.out_xlsx)
+
+if __name__ == '__main__':
+    main()
