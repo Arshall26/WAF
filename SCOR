@@ -1,41 +1,23 @@
-Click Next: Networking.
+C:\Users\U019971\SCOR\Technical Architecture - FinOps\VM Rightsizing\automated_process\Build_CPU_analysis_report\2026\November>python build_scor_master.py --vm-xlsx AzureVirtualMachines1119.xlsx --vm-sheet AzureVirtualMachines1119 --reserved-xlsx reservedInstances1119.xlsx --out-xlsx SCOR_Master_Output1119.xlsx
+Traceback (most recent call last):
+  File "C:\Users\U019971\SCOR\Technical Architecture - FinOps\VM Rightsizing\automated_process\Build_CPU_analysis_report\2026\November\build_scor_master.py", line 256, in <module>
+    main()
+  File "C:\Users\U019971\SCOR\Technical Architecture - FinOps\VM Rightsizing\automated_process\Build_CPU_analysis_report\2026\November\build_scor_master.py", line 245, in main
+    df_res[['Product name','SIZE','GROUP','Qty','vCPU','CPU','Region','RegionLabel','Expiration date','ExpYear']].to_excel(
+  File "C:\Users\U019971\.pyenv\pyenv-win\versions\3.11.9\Lib\site-packages\pandas\util\_decorators.py", line 333, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\U019971\.pyenv\pyenv-win\versions\3.11.9\Lib\site-packages\pandas\core\generic.py", line 2439, in to_excel
+    formatter.write(
+  File "C:\Users\U019971\.pyenv\pyenv-win\versions\3.11.9\Lib\site-packages\pandas\io\formats\excel.py", line 952, in write
+    writer._write_cells(
+  File "C:\Users\U019971\.pyenv\pyenv-win\versions\3.11.9\Lib\site-packages\pandas\io\excel\_openpyxl.py", line 486, in _write_cells
+    for cell in cells:
+  File "C:\Users\U019971\.pyenv\pyenv-win\versions\3.11.9\Lib\site-packages\pandas\io\formats\excel.py", line 890, in get_formatted_cells
+    cell.val = self._format_value(cell.val)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\U019971\.pyenv\pyenv-win\versions\3.11.9\Lib\site-packages\pandas\io\formats\excel.py", line 607, in _format_value
+    raise ValueError(
+ValueError: Excel does not support datetimes with timezones. Please ensure that datetimes are timezone unaware before writing to Excel.
 
-Select Private access. This complies with SCOR security guidelines to disable public network access. You will configure the Private Endpoint in the subsequent deployment phase based on your standard landing zone VNet.
-
-[Screen: "Networking" tab highlighting the "Private access" selection]
-
-Click Review + Create, then Create.
-
-2. RBAC / Custom Role Permissions
-To adhere strictly to the Principle of Least Privilege, the Automation Account must not be granted generic Contributor roles. It requires a specific Custom Role containing only the exact actions needed to stop/start VMs and modify disk SKUs.
-
-Required Actions for the Custom Role (e.g., Custom-Role-FinOps-ASR-SmartTiering):
-
-Microsoft.Compute/virtualMachines/read
-
-Microsoft.Compute/virtualMachines/powerOff/action
-
-Microsoft.Compute/virtualMachines/start/action
-
-Microsoft.Compute/disks/read
-
-Microsoft.Compute/disks/write
-
-Microsoft.Compute/disks/revokeAccess/action
-
-3. Assigning the Role at the Subscription Level
-To ensure the automation scales effortlessly across all current and future DR Resource Groups, the role assignment is applied at the Subscription scope.
-
-Navigate to the Subscription containing your ASR and DR resources.
-
-[Screen: The Subscription overview page]
-
-In the left-hand menu, select Access control (IAM).
-
-Click + Add > Add role assignment.
-
-[Screen: Dropdown menu showing "Add role assignment"]
-
-In the Role tab, search for and select your newly created Custom Role (e.g., Custom-Role-FinOps-ASR-SmartTiering). Click Next.
-
-[Screen: Role search bar with the Custom Role selected]
+c'est quoi le souci ? explique moi stp
