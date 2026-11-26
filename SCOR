@@ -1,23 +1,53 @@
-Resource group
-(move)
-:
-aeenprdrg-db1
-Status
-:
-Succeeded
-Location
-:
-North Europe
+regarde si tout est bon :
+
+Product details
+SQL database
+by Microsoft
+Terms of use  |  Privacy policy
+Estimated cost
+Storage cost 4.42 USD / month + Compute cost 0.000124 USD / vCore second
+Terms
+By clicking "Create", I (a) agree to the legal terms and privacy statement(s) associated with the Marketplace offering(s) listed above; (b) authorize Microsoft to bill my current payment method for the fees associated with the offering(s), with the same billing frequency as my Azure subscription; and (c) agree that Microsoft may share my contact, usage and transactional information with the provider(s) of the offering(s) for support, billing and other transactional activities. Microsoft does not provide rights for third-party offerings. For additional details see Azure Marketplace Terms.
+Basics
 Subscription
-(move)
-:
 SCOR AZURE INFRASTRUCTURE
-Subscription ID
-:
-2accc38d-021d-40bf-bcfb-6fa2c439ec1b
-Type
-:
-Data factory (V2)
-Getting started
-:
-Quick start
+Resource group
+AEEnPrdRg-Db1
+Region
+northeurope
+Database name
+hamza_test_import_db
+Server
+aeenprddbs
+Compute + storage
+General Purpose - Serverless: Standard-series (Gen5), 1 vCore, 32 GB storage, zone redundant disabled
+Backup storage redundancy
+Locally-redundant backup storage
+Networking
+Allow Azure services and resources to access this server
+Yes
+Private endpoint
+None
+Security
+Transparent data encryption (Server level)
+Service-managed key selected
+Database level customer-managed key
+Not configured
+Database level user assigned managed identity
+Not configured
+Advanced data security
+Enabled
+Always Encrypted with secure enclaves
+Not configured
+Sql Ledger(Database)
+Disabled
+Digest Storage
+Disabled
+Additional settings
+Use existing data
+Blank
+Collation
+SQL_Latin1_General_CP1_CI_AS
+Maintenance window
+System default (5pm to 8am)
+Tags
