@@ -1,16 +1,16 @@
-dans manage linked service : j'ai deja ca :
-
-AzureSqlDatabase1
-Azure SQL Database
-0
-Yes
-
-
-FinOpsCostManagmentExport
-
-
-Azure Data Lake Storage Gen2
-0
----
-
-j'ai l'impression qu'il y a deja la sql db et l'export dedans 
+{
+    "name": "FinOpsCostManagmentExport",
+    "type": "Microsoft.DataFactory/factories/linkedservices",
+    "properties": {
+        "annotations": [],
+        "type": "AzureBlobFS",
+        "typeProperties": {
+            "url": "https://aenprdstfinops.dfs.core.windows.net/",
+            "encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiIxODYzZDk5ZS0wZjdhLTRkNjYtYTg2MS01ZjQxMDdmMDc5OTAiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+        },
+        "connectVia": {
+            "referenceName": "integrationRuntime1",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}
