@@ -1,1 +1,2 @@
-You are not authorized to perform deployments in your resource group. Please verify that you have the 'Microsoft.Resources/deployments/write' permission at the resource group level. Learn more
+ADLS Gen2 operation failed for: Operation returned an invalid status code 'Conflict'. Account: 'aenprdstfinops'. ErrorCode: 'EndpointUnsupportedAccountFeatures'. Message: 'This endpoint does not support BlobStorageEvents or SoftDelete. Please disable these account features if you would like to use this endpoint.'. RequestId: '5f2cc46f-801f-0061-7fbc-7de7ed000000'. TimeStamp: 'Thu, 26 Nov 2026 15:37:37 GMT'..
+Operation returned an invalid status code 'Conflict'
