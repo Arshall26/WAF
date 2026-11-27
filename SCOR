@@ -1,2 +1,18 @@
-ADLS Gen2 operation failed for: Operation returned an invalid status code 'Conflict'. Account: 'aenprdstfinops'. ErrorCode: 'EndpointUnsupportedAccountFeatures'. Message: 'This endpoint does not support BlobStorageEvents or SoftDelete. Please disable these account features if you would like to use this endpoint.'. RequestId: '5f2cc46f-801f-0061-7fbc-7de7ed000000'. TimeStamp: 'Thu, 26 Nov 2026 15:37:37 GMT'..
-Operation returned an invalid status code 'Conflict'
+Subject: RBAC Access Request – Azure Data Factory Publish Permissions (aeenprdrg-db1)
+
+Hi,
+
+I am currently setting up the FinOps billing ingestion pipeline in Azure Data Factory, and I am blocked from publishing and applying my changes.
+
+Clicking Publish in ADF Studio triggers an ARM template deployment at the resource group level, which currently fails with the following authorization error:
+Please verify that you have the 'Microsoft.Resources/deployments/write' permission at the resource group level.
+
+Could you please grant me the Contributor role (or a custom RBAC role that includes Microsoft.Resources/deployments/write, Microsoft.Resources/deployments/read, and Microsoft.Resources/deployments/validate/action alongside Data Factory Contributor) on the following scope?
+
+Subscription: SCOR AZURE INFRASTRUCTURE (2accc38d-021d-40bf-bcfb-6fa2c439ec1b)
+
+Resource Group: aeenprdrg-db1
+
+Thanks in advance for your help,
+
+Hamza
